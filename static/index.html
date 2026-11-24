@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FAF8F4">
+<title>Vår liste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#FAF8F4; --fg:#1F2421; --accent:#2F6F55; --muted:#5A615C; --line:#ECE7DD; --border:#D9D3C7; --track:#E7E2D8; --peach:#F0C9A8; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:17px/1.4 Inter,system-ui,sans-serif; background:var(--bg); color:var(--fg); }
+  button, input { font-family: inherit; }
+  main { max-width:520px; margin:0 auto; padding:24px 20px 48px; padding-bottom:max(48px, env(safe-area-inset-bottom)); }
+  h1 { margin:0; font:700 30px 'Space Grotesk',Inter,sans-serif; letter-spacing:-.5px; }
+  [hidden] { display:none !important; }
+
+  /* header */
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .lang { display:flex; padding:3px; border-radius:20px; background:#ECE7DD; }
+  .lang button { min-width:44px; height:36px; border:0; border-radius:18px; background:transparent; color:#3F4641; font-size:13px; font-weight:600; cursor:pointer; }
+  .lang button[aria-pressed=true] { background:var(--accent); color:#fff; }
+  .progress { margin:12px 0 4px; }
+  .progress .row { display:flex; justify-content:space-between; gap:8px; font-size:14px; color:var(--muted); }
+  .bar { height:6px; border-radius:3px; background:var(--track); margin-top:8px; overflow:hidden; }
+  .bar div { height:6px; border-radius:3px; background:var(--accent); width:0; transition:width .2s; }
+
+  /* add + inputs */
+  #add-form { display:flex; gap:8px; margin:12px 0 4px; }
+  input { flex:1; min-width:0; height:52px; padding:0 16px; font-size:16px; color:var(--fg); background:#fff; border:1.5px solid var(--border); border-radius:14px; }
+  input:focus { outline:none; border-color:var(--accent); }
+  .btn { height:52px; padding:0 20px; border:0; border-radius:26px; background:var(--accent); color:#fff; font-size:16px; font-weight:600; cursor:pointer; }
+
+  /* list */
+  ul { list-style:none; padding:0; margin:12px 0; }
+  li { display:flex; align-items:center; border-bottom:1px solid var(--line); }
+  li .toggle { flex:1; min-width:0; display:flex; align-items:center; gap:14px; min-height:56px; padding:6px 0; background:none; border:0; text-align:left; color:inherit; font-size:17px; cursor:pointer; }
+  li .name { flex:1; min-width:0; font-weight:500; overflow-wrap:anywhere; }
+  li.done .name { color:#6B726D; text-decoration:line-through; font-weight:400; }
+  .check { flex:none; width:28px; height:28px; border-radius:14px; border:2px solid #8A918B; display:flex; align-items:center; justify-content:center; }
+  li.done .check { background:var(--accent); border-color:var(--accent); }
+  .check svg { display:none; } li.done .check svg { display:block; }
+  .who { flex:none; width:24px; height:24px; border-radius:12px; background:var(--peach); color:#3A2412; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; }
+  .who.me { background:var(--accent); color:#fff; }
+  li .del { flex:none; width:44px; height:44px; border:0; background:none; color:#8A918B; cursor:pointer; border-radius:22px; }
+  li .del:hover { color:var(--fg); }
+  .empty { color:var(--muted); text-align:center; padding:32px 0; }
+
+  .foot { display:flex; justify-content:space-between; }
+  .link { background:none; border:0; color:var(--muted); font-size:15px; min-height:44px; padding:0 4px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* login */
+  .stack { display:flex; flex-direction:column; gap:12px; margin-top:24px; }
+  .err { color:#B3261E; min-height:1.2em; font-size:15px; }
+  #login .btn { width:100%; height:56px; border-radius:28px; font-size:17px; }
+  #login header { justify-content:flex-end; }
+  #login h1 { margin-top:16px; }
+</style>
+</head>
+<body>
+<main>
+  <section id="login" hidden>
+    <header><div class="lang" role="group" aria-label="Språk / Language"><button type="button" data-lang="nb" lang="nb" aria-label="Norsk">NO</button><button type="button" data-lang="en" lang="en" aria-label="English">EN</button></div></header>
+    <h1 data-i18n="welcome"></h1>
+    <form class="stack" id="login-form">
+      <input id="name" data-i18n-ph="yourName" autocomplete="given-name" required>
+      <input id="code" data-i18n-ph="code" type="password" required>
+      <button class="btn" data-i18n="join"></button>
+      <div class="err" id="login-err" role="alert"></div>
+    </form>
+  </section>
+
+  <section id="app" hidden>
+    <header>
+      <h1 data-i18n="title"></h1>
+      <div class="lang" role="group" aria-label="Språk / Language"><button type="button" data-lang="nb" lang="nb" aria-label="Norsk">NO</button><button type="button" data-lang="en" lang="en" aria-label="English">EN</button></div>
+    </header>
+    <div class="progress" id="progress" hidden>
+      <div class="row"><span id="left"></span><span id="got"></span></div>
+      <div class="bar"><div id="pct"></div></div>
+    </div>
+    <form id="add-form">
+      <input id="new" data-i18n-ph="add" autocomplete="off" required aria-label="Legg til vare">
+      <button class="btn" data-i18n="addBtn"></button>
+    </form>
+    <ul id="items"></ul>
+    <p class="empty" id="empty" data-i18n="empty" hidden></p>
+    <div class="foot">
+      <button class="link" id="clear" data-i18n="clear"></button>
+      <button class="link" id="logout" data-i18n="logout"></button>
+    </div>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const T = {
+  nb: { welcome:'Velkommen 🛒', yourName:'Navnet ditt', code:'Husstandskode', join:'Bli med', title:'Vår liste',
+        add:'Legg til vare', addBtn:'Legg til', clear:'Fjern avkryssede', logout:'Logg ut', del:'Slett',
+        empty:'Listen er tom. Legg til noe over.',
+        left:n => `${n} igjen`, got:(g,t) => `${g} av ${t} i kurven`, addedBy:n => `Lagt til av ${n}`,
+        wrongCode:'Feil husstandskode', tooMany:'For mange forsøk, vent ett minutt', error:'Noe gikk galt',
+        badName:'Varenavn må være 1–100 tegn', addFail:'Kunne ikke legge til varen' },
+  en: { welcome:'Welcome 🛒', yourName:'Your name', code:'Household code', join:'Join', title:'Our list',
+        add:'Add an item', addBtn:'Add', clear:'Clear checked', logout:'Sign out', del:'Delete',
+        empty:'The list is empty. Add something above.',
+        left:n => `${n} to get`, got:(g,t) => `${g} of ${t} in the basket`, addedBy:n => `Added by ${n}`,
+        wrongCode:'Wrong household code', tooMany:'Too many attempts, wait a minute', error:'Something went wrong',
+        badName:'Item name must be 1–100 characters', addFail:'Could not add item' },
+};
+let lang = document.documentElement.lang === 'en' ? 'en' : 'nb';
+let me = '', items = [];
+const t = k => T[lang][k];
+
+function setLang(l) {
+  lang = l; document.documentElement.lang = l;
+  document.cookie = 'sl_lang=' + l + '; Path=/; Max-Age=31536000; SameSite=Lax';
+  for (const e of document.querySelectorAll('[data-i18n]')) e.textContent = t(e.dataset.i18n);
+  for (const e of document.querySelectorAll('[data-i18n-ph]')) { e.placeholder = t(e.dataset.i18nPh); }
+  $('new').setAttribute('aria-label', t('add'));
+  for (const b of document.querySelectorAll('[data-lang]')) b.setAttribute('aria-pressed', b.dataset.lang === l);
+  document.title = t('title');
+  render();
+}
+for (const b of document.querySelectorAll('[data-lang]')) b.onclick = () => setLang(b.dataset.lang);
+
+async function api(path, method = 'GET', body) {
+  try {
+    const r = await fetch('/api/' + path, { method, headers: body ? {'Content-Type':'application/json'} : {}, body: body && JSON.stringify(body) });
+    if (r.status === 401 && path !== 'login' && path !== 'me') show(false);
+    return r;
+  } catch { return { ok: false, status: 0, json: async () => [] }; }
+}
+
+function show(loggedIn) { $('login').hidden = loggedIn; $('app').hidden = !loggedIn; }
+
+const CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+function render() {
+  const ul = $('items'); ul.replaceChildren();
+  const got = items.filter(i => i.done).length;
+  $('progress').hidden = $('empty').hidden = true;
+  $('empty').hidden = items.length > 0;
+  $('progress').hidden = items.length === 0;
+  $('left').textContent = t('left')(items.length - got);
+  $('got').textContent = t('got')(got, items.length);
+  $('pct').style.width = (items.length ? Math.round(got / items.length * 100) : 0) + '%';
+  for (const it of items) {
+    const li = document.createElement('li'); if (it.done) li.className = 'done';
+    const tg = document.createElement('button'); tg.className = 'toggle'; tg.setAttribute('aria-pressed', it.done);
+    tg.onclick = async () => { await api('items/' + it.id, 'PATCH', { done: !it.done }); refresh(); };
+    const check = document.createElement('span'); check.className = 'check'; check.innerHTML = CHECK;
+    const name = document.createElement('span'); name.className = 'name'; name.textContent = it.name;
+    const who = document.createElement('span'); who.className = 'who' + (it.added_by === me ? ' me' : '');
+    who.textContent = [...it.added_by][0]?.toUpperCase() ?? ''; who.title = t('addedBy')(it.added_by);
+    who.setAttribute('aria-label', t('addedBy')(it.added_by));
+    tg.append(check, name, who);
+    const del = document.createElement('button'); del.className = 'del'; del.textContent = '✕'; del.setAttribute('aria-label', t('del') + ' ' + it.name);
+    del.onclick = async () => { await api('items/' + it.id, 'DELETE'); refresh(); };
+    li.append(tg, del); ul.append(li);
+  }
+}
+
+async function refresh() {
+  const r = await api('items');
+  if (!r.ok) return;
+  items = await r.json();
+  render();
+}
+
+$('login-form').onsubmit = async e => {
+  e.preventDefault();
+  const r = await api('login', 'POST', { name: $('name').value, code: $('code').value });
+  if (r.ok) { me = (await r.json()).name; $('login-err').textContent = ''; show(true); refresh(); }
+  else $('login-err').textContent = r.status === 403 ? t('wrongCode') : r.status === 429 ? t('tooMany') : t('error');
+};
+$('add-form').onsubmit = async e => {
+  e.preventDefault();
+  const r = await api('items', 'POST', { name: $('new').value });
+  if (r.ok) $('new').value = ''; else alert(r.status === 400 ? t('badName') : t('addFail'));
+  refresh();
+};
+$('clear').onclick = async () => { await api('items/clear-done', 'POST'); refresh(); };
+$('logout').onclick = async () => { await api('logout', 'POST'); show(false); };
+
+setLang(lang);
+(async () => { const r = await api('me'); if (r.ok) { me = (await r.json()).name; show(true); refresh(); } else show(false); })();
+setInterval(() => { if (!$('app').hidden && !document.hidden) refresh(); }, 5000);
+</script>
+</body>
+</html>
