@@ -8,185 +8,426 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#FAF8F4; --fg:#1F2421; --accent:#2F6F55; --muted:#5A615C; --line:#ECE7DD; --border:#D9D3C7; --track:#E7E2D8; --peach:#F0C9A8; }
+  :root { --bg:#FAF8F4; --fg:#1F2421; --accent:#2F6F55; --muted:#5A615C; --line:#ECE7DD; --border:#D9D3C7; --track:#E7E2D8; --peach:#F0C9A8; --card:#fff; }
   * { box-sizing: border-box; }
   body { margin:0; font:17px/1.4 Inter,system-ui,sans-serif; background:var(--bg); color:var(--fg); }
+  body.shop { --bg:#1F2A24; --fg:#F4F1EA; --muted:#B9C4BC; --line:#38463E; --track:#38463E; }
   button, input { font-family: inherit; }
-  main { max-width:520px; margin:0 auto; padding:24px 20px 48px; padding-bottom:max(48px, env(safe-area-inset-bottom)); }
-  h1 { margin:0; font:700 30px 'Space Grotesk',Inter,sans-serif; letter-spacing:-.5px; }
   [hidden] { display:none !important; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .shop :focus-visible { outline-color:#8FD1AE; }
+  h1 { margin:0; font:700 30px 'Space Grotesk',Inter,sans-serif; letter-spacing:-.5px; }
+  h2 { margin:0 0 4px; font-size:12px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; color:var(--muted); }
+  svg { flex:none; }
 
-  /* header */
-  header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  #shell { max-width:520px; min-height:100dvh; margin:0 auto; display:flex; flex-direction:column; }
+  .view { flex:1; padding:24px 20px 16px; }
+  .head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .back { display:flex; align-items:center; gap:4px; margin:-8px 0 0 -12px; padding:0 12px 0 4px; border:0; background:none; color:inherit; cursor:pointer; }
+  .back .circle { width:48px; height:48px; display:flex; align-items:center; justify-content:center; }
+  .subhead h1 { font-size:24px; }
+  .sub { color:var(--muted); font-size:15px; margin:4px 0 0; }
+
   .lang { display:flex; padding:3px; border-radius:20px; background:#ECE7DD; }
   .lang button { min-width:44px; height:36px; border:0; border-radius:18px; background:transparent; color:#3F4641; font-size:13px; font-weight:600; cursor:pointer; }
   .lang button[aria-pressed=true] { background:var(--accent); color:#fff; }
+
   .progress { margin:12px 0 4px; }
   .progress .row { display:flex; justify-content:space-between; gap:8px; font-size:14px; color:var(--muted); }
   .bar { height:6px; border-radius:3px; background:var(--track); margin-top:8px; overflow:hidden; }
-  .bar div { height:6px; border-radius:3px; background:var(--accent); width:0; transition:width .2s; }
+  .bar div { height:100%; border-radius:3px; background:var(--accent); width:0; transition:width .2s; }
 
-  /* add + inputs */
-  #add-form { display:flex; gap:8px; margin:12px 0 4px; }
-  input { flex:1; min-width:0; height:52px; padding:0 16px; font-size:16px; color:var(--fg); background:#fff; border:1.5px solid var(--border); border-radius:14px; }
-  input:focus { outline:none; border-color:var(--accent); }
-  .btn { height:52px; padding:0 20px; border:0; border-radius:26px; background:var(--accent); color:#fff; font-size:16px; font-weight:600; cursor:pointer; }
+  .addrow { display:flex; align-items:center; gap:12px; width:100%; height:52px; margin:12px 0 4px; padding:0 16px; border-radius:14px; background:var(--card); border:1.5px solid var(--border); color:var(--muted); font-size:16px; cursor:pointer; text-align:left; }
 
-  /* list */
-  ul { list-style:none; padding:0; margin:12px 0; }
-  li { display:flex; align-items:center; border-bottom:1px solid var(--line); }
-  li .toggle { flex:1; min-width:0; display:flex; align-items:center; gap:14px; min-height:56px; padding:6px 0; background:none; border:0; text-align:left; color:inherit; font-size:17px; cursor:pointer; }
-  li .name { flex:1; min-width:0; font-weight:500; overflow-wrap:anywhere; }
-  li.done .name { color:#6B726D; text-decoration:line-through; font-weight:400; }
-  .check { flex:none; width:28px; height:28px; border-radius:14px; border:2px solid #8A918B; display:flex; align-items:center; justify-content:center; }
-  li.done .check { background:var(--accent); border-color:var(--accent); }
-  .check svg { display:none; } li.done .check svg { display:block; }
-  .who { flex:none; width:24px; height:24px; border-radius:12px; background:var(--peach); color:#3A2412; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; }
+  .btn { height:56px; padding:0 22px; border:0; border-radius:28px; background:var(--accent); color:#fff; font-size:17px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; }
+  .btn.ghost { background:var(--card); color:var(--accent); border:1.5px solid var(--accent); font-size:16px; }
+  .btn.wide { width:100%; }
+  .shop .btn { background:#8FD1AE; color:#1F2A24; }
+
+  section.aisle { padding-top:14px; }
+  .row-item { display:flex; align-items:center; border-bottom:1px solid var(--line); }
+  .toggle { flex:1; min-width:0; display:flex; align-items:center; gap:14px; min-height:56px; padding:6px 0; background:none; border:0; text-align:left; color:inherit; font-size:17px; cursor:pointer; }
+  .txt { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .nm { font-weight:500; overflow-wrap:anywhere; }
+  .note { font-size:13px; color:var(--muted); overflow-wrap:anywhere; }
+  .done .nm { color:#6B726D; text-decoration:line-through; font-weight:400; }
+  .qty { font-size:14px; color:var(--muted); }
+  .check { width:28px; height:28px; border-radius:14px; border:2px solid #8A918B; display:flex; align-items:center; justify-content:center; }
+  .done .check { background:var(--accent); border-color:var(--accent); }
+  .check svg { display:none; } .done .check svg { display:block; }
+  .who { width:24px; height:24px; border-radius:12px; background:var(--peach); color:#3A2412; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex:none; }
   .who.me { background:var(--accent); color:#fff; }
-  li .del { flex:none; width:44px; height:44px; border:0; background:none; color:#8A918B; cursor:pointer; border-radius:22px; }
-  li .del:hover { color:var(--fg); }
+  .del { flex:none; width:44px; height:44px; border:0; background:none; color:#8A918B; cursor:pointer; border-radius:22px; }
+  .del:hover { color:var(--fg); }
   .empty { color:var(--muted); text-align:center; padding:32px 0; }
-
-  .foot { display:flex; justify-content:space-between; }
+  .foot { display:flex; justify-content:space-between; margin-top:8px; }
   .link { background:none; border:0; color:var(--muted); font-size:15px; min-height:44px; padding:0 4px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
-  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
-  /* login */
-  .stack { display:flex; flex-direction:column; gap:12px; margin-top:24px; }
+  /* bottom bar */
+  .bottom { position:sticky; bottom:0; background:var(--bg); }
+  .bottom .cta { padding:0 20px 12px; }
+  nav { height:64px; display:flex; border-top:1px solid #E4DFD4; background:#fff; padding-bottom:env(safe-area-inset-bottom); box-sizing:content-box; }
+  nav a { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--muted); font-size:12px; font-weight:500; text-decoration:none; }
+  nav a[aria-current=page] { color:var(--accent); font-weight:600; }
+
+  /* inputs */
+  label, .lbl { font-size:14px; font-weight:600; }
+  input[type=text], input[type=password] { width:100%; height:52px; padding:0 16px; font-size:16px; color:var(--fg); background:var(--card); border:1.5px solid var(--border); border-radius:14px; }
+  input:focus { outline:none; border-color:var(--accent); }
+  .field { display:flex; flex-direction:column; gap:8px; margin-bottom:24px; }
+  #name { height:56px; font-size:18px; border-width:2px; }
+  .sugg { display:flex; flex-direction:column; background:var(--card); border:1px solid #E4DFD4; border-radius:14px; overflow:hidden; }
+  .sugg button { display:flex; justify-content:space-between; align-items:center; min-height:48px; padding:0 16px; background:none; border:0; border-bottom:1px solid var(--line); font-size:16px; color:var(--fg); text-align:left; cursor:pointer; }
+  .sugg button:last-child { border-bottom:0; }
+  .sugg small { font-size:13px; color:var(--muted); }
+  .stepper { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+  .stepper .ctl { display:flex; align-items:center; gap:4px; }
+  .stepper button { width:48px; height:48px; border-radius:24px; border:1.5px solid var(--border); background:var(--card); display:flex; align-items:center; justify-content:center; color:var(--fg); cursor:pointer; }
+  .stepper output { min-width:48px; text-align:center; font-size:20px; font-weight:600; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chips button { height:44px; padding:0 18px; border-radius:22px; border:1.5px solid var(--border); background:var(--card); font-size:15px; color:var(--fg); cursor:pointer; }
+  .chips button[aria-pressed=true] { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  .actions { position:sticky; bottom:0; display:flex; gap:12px; padding:12px 20px 20px; background:#fff; border-top:1px solid #E4DFD4; }
+  .actions .btn:last-child { flex:1; }
   .err { color:#B3261E; min-height:1.2em; font-size:15px; }
-  #login .btn { width:100%; height:56px; border-radius:28px; font-size:17px; }
-  #login header { justify-content:flex-end; }
-  #login h1 { margin-top:16px; }
+  #flash { margin:0 0 12px; color:var(--accent); font-weight:600; min-height:1.4em; }
+
+  /* shop */
+  .shop .big { font:700 34px 'Space Grotesk',Inter,sans-serif; letter-spacing:-.5px; margin:0 0 12px; }
+  .shop .bar div { background:#8FD1AE; } .shop .bar { height:8px; }
+  .shop h2 { font-size:13px; margin:16px 0 8px; }
+  .shop .row-item { border:0; margin-bottom:8px; background:#2F3F36; border-radius:16px; padding:0 4px 0 16px; }
+  .shop .row-item.done { background:#2B3A32; }
+  .shop .toggle { min-height:68px; font-size:20px; gap:16px; }
+  .shop .check { width:34px; height:34px; border-radius:17px; border:2.5px solid #8FA096; }
+  .shop .done .check { background:#8FD1AE; border-color:#8FD1AE; }
+  .shop .done .check svg { stroke:#1F2A24; }
+  .shop .qty { font-size:17px; font-weight:600; color:var(--fg); }
+  .shop .del, .shop .who { display:none; }
+  .shop .done .nm { color:#B9C4BC; }
+  .shop .bottom { background:var(--bg); border-top:1px solid #38463E; padding:12px 20px 24px; }
+  .with { font-size:14px; color:var(--muted); }
+
+  /* history */
+  .hist { display:flex; align-items:center; gap:12px; min-height:60px; border-bottom:1px solid var(--line); }
+  .hist .txt span:last-child { font-size:13px; color:var(--muted); }
+  .hist .add { width:48px; height:48px; border-radius:24px; border:0; background:var(--accent); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .onlist { font-size:13px; color:#1F5A43; font-weight:600; display:flex; align-items:center; gap:4px; }
 </style>
 </head>
 <body>
-<main>
-  <section id="login" hidden>
-    <header><div class="lang" role="group" aria-label="Språk / Language"><button type="button" data-lang="nb" lang="nb" aria-label="Norsk">NO</button><button type="button" data-lang="en" lang="en" aria-label="English">EN</button></div></header>
-    <h1 data-i18n="welcome"></h1>
-    <form class="stack" id="login-form">
-      <input id="name" data-i18n-ph="yourName" autocomplete="given-name" required>
-      <input id="code" data-i18n-ph="code" type="password" required>
-      <button class="btn" data-i18n="join"></button>
+<div id="shell">
+
+  <!-- login -->
+  <div class="view" id="login" hidden>
+    <div class="head" style="justify-content:flex-end"><div class="lang" role="group" aria-label="Språk / Language"></div></div>
+    <h1 data-i18n="welcome" style="margin-top:16px"></h1>
+    <form id="login-form" style="display:flex;flex-direction:column;gap:12px;margin-top:24px">
+      <input type="text" id="login-name" data-i18n-ph="yourName" autocomplete="given-name" required aria-label="Navn">
+      <input type="password" id="login-code" data-i18n-ph="code" required aria-label="Kode">
+      <button class="btn wide" data-i18n="join"></button>
       <div class="err" id="login-err" role="alert"></div>
     </form>
-  </section>
+  </div>
 
-  <section id="app" hidden>
-    <header>
-      <h1 data-i18n="title"></h1>
-      <div class="lang" role="group" aria-label="Språk / Language"><button type="button" data-lang="nb" lang="nb" aria-label="Norsk">NO</button><button type="button" data-lang="en" lang="en" aria-label="English">EN</button></div>
-    </header>
-    <div class="progress" id="progress" hidden>
-      <div class="row"><span id="left"></span><span id="got"></span></div>
-      <div class="bar"><div id="pct"></div></div>
+  <!-- list -->
+  <div id="list" hidden style="display:flex;flex-direction:column;flex:1">
+    <div class="view">
+      <div class="head">
+        <h1 data-i18n="title"></h1>
+        <div class="lang" role="group" aria-label="Språk / Language"></div>
+      </div>
+      <div class="progress" data-progress><div class="row"><span data-left></span><span data-got></span></div><div class="bar"><div data-pct></div></div></div>
+      <button class="addrow" id="go-add" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F6F55" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span data-i18n="addItem"></span>
+      </button>
+      <div id="list-items"></div>
+      <p class="empty" data-i18n="empty" id="list-empty" hidden></p>
+      <div class="foot"><button class="link" id="clear" data-i18n="clear"></button><button class="link" id="logout" data-i18n="logout"></button></div>
     </div>
-    <form id="add-form">
-      <input id="new" data-i18n-ph="add" autocomplete="off" required aria-label="Legg til vare">
-      <button class="btn" data-i18n="addBtn"></button>
-    </form>
-    <ul id="items"></ul>
-    <p class="empty" id="empty" data-i18n="empty" hidden></p>
-    <div class="foot">
-      <button class="link" id="clear" data-i18n="clear"></button>
-      <button class="link" id="logout" data-i18n="logout"></button>
+    <div class="bottom">
+      <div class="cta"><a class="btn wide" href="#shop" style="text-decoration:none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6h15l-1.5 8H7z"/><path d="M5 6L4 3H2"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>
+        <span data-i18n="start"></span></a></div>
+      <nav data-nav></nav>
     </div>
-  </section>
-</main>
+  </div>
+
+  <!-- add -->
+  <div id="add" hidden style="display:flex;flex-direction:column;flex:1">
+    <div class="view subhead">
+      <div class="head" style="justify-content:flex-start;gap:4px"><button class="back" type="button" data-back style="margin:-8px 0 0 -12px"><span class="circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></span></button><h1 data-i18n="addItem" style="margin-top:-8px"></h1></div>
+      <form id="add-form" style="margin-top:12px" autocomplete="off">
+        <div class="field">
+          <label for="name" data-i18n="whatNeed"></label>
+          <input type="text" id="name" maxlength="100" required>
+          <div class="sugg" id="sugg" hidden></div>
+        </div>
+        <div class="stepper"><span class="lbl" id="qtylabel" data-i18n="count"></span>
+          <div class="ctl" role="group" aria-labelledby="qtylabel">
+            <button type="button" id="less" data-i18n-aria="fewer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+            <output id="qty" aria-live="polite">1</output>
+            <button type="button" id="more" data-i18n-aria="more"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div></div>
+        <div class="field"><span class="lbl" id="catlabel" data-i18n="aisle"></span><div class="chips" id="chips" role="group" aria-labelledby="catlabel"></div></div>
+        <div class="field"><label for="note"><span data-i18n="note"></span> <span style="font-weight:400;color:var(--muted)" data-i18n="optional"></span></label>
+          <input type="text" id="note" maxlength="200" data-i18n-ph="notePh"></div>
+        <div class="err" id="add-err" role="alert"></div>
+      </form>
+    </div>
+    <div class="actions"><button class="btn ghost" type="submit" form="add-form" value="more" data-i18n="addMore"></button><button class="btn" type="submit" form="add-form" value="back" data-i18n="addBtn"></button></div>
+  </div>
+
+  <!-- shop -->
+  <div id="shop" hidden style="display:flex;flex-direction:column;flex:1">
+    <div class="view" style="padding-top:16px">
+      <div class="head"><button class="back" type="button" data-back aria-label="Tilbake"><span class="circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></span></button><span class="with" id="with"></span></div>
+      <p class="big" id="big"></p>
+      <div class="bar"><div data-pct></div></div>
+      <div id="shop-items"></div>
+    </div>
+    <div class="bottom"><button class="btn wide" id="finish" data-i18n="finish"></button></div>
+  </div>
+
+  <!-- history -->
+  <div id="history" hidden style="display:flex;flex-direction:column;flex:1">
+    <div class="view">
+      <h1 data-i18n="often"></h1>
+      <p class="sub" data-i18n="oftenHint"></p>
+      <div id="hist-items"></div>
+      <p class="empty" data-i18n="oftenEmpty" id="hist-empty" hidden></p>
+    </div>
+    <div class="bottom"><nav data-nav></nav></div>
+  </div>
+</div>
+
 <script>
 const $ = id => document.getElementById(id);
+const CATS = ['produce','dairy','pantry','meat','frozen','household','bakery'];  // aisle order; '' = other, last
 const T = {
   nb: { welcome:'Velkommen 🛒', yourName:'Navnet ditt', code:'Husstandskode', join:'Bli med', title:'Vår liste',
-        add:'Legg til vare', addBtn:'Legg til', clear:'Fjern avkryssede', logout:'Logg ut', del:'Slett',
-        empty:'Listen er tom. Legg til noe over.',
+        addItem:'Legg til vare', addBtn:'Legg til', addMore:'Legg til og ny', clear:'Fjern avkryssede', logout:'Logg ut', del:'Slett',
+        empty:'Listen er tom. Legg til noe over.', start:'Start handletur', navList:'Liste', navOften:'Ofte kjøpt', navLabel:'Hovedmeny',
+        whatNeed:'Hva trenger dere?', count:'Antall', fewer:'Færre', more:'Flere', aisle:'Avdeling', note:'Notat', optional:'(valgfritt)',
+        notePh:'Merke, størrelse, alt andre bør vite', back:'Tilbake',
         left:n => `${n} igjen`, got:(g,t) => `${g} av ${t} i kurven`, addedBy:n => `Lagt til av ${n}`,
+        bigLeft:n => n === 0 ? 'Alt er handlet' : `${n} igjen å handle`, finish:'Ferdig med handelen', with:n => `${n} handler også`,
+        often:'Ofte kjøpt', oftenHint:'Trykk på + for å legge noe tilbake på listen.', oftenEmpty:'Ingenting ennå. Varer du kjøper flere ganger dukker opp her.',
+        weekly:'Omtrent hver uke', sometimes:'Av og til', onList:'På listen', addTo:n => `Legg til ${n} på listen`,
+        last:r => `sist kjøpt ${r}`, today:'i dag',
         wrongCode:'Feil husstandskode', tooMany:'For mange forsøk, vent ett minutt', error:'Noe gikk galt',
-        badName:'Varenavn må være 1–100 tegn', addFail:'Kunne ikke legge til varen' },
+        badName:'Sjekk navn, antall og notat (maks 100/20/200 tegn)', dup:'Er allerede på listen', addFail:'Kunne ikke legge til varen', added:n => `La til ${n}`,
+        cat:{ produce:'Frukt og grønt', dairy:'Meieri', pantry:'Tørrvarer', meat:'Kjøtt og fisk', frozen:'Frysevarer', household:'Husholdning', bakery:'Bakeri', '':'Annet' } },
   en: { welcome:'Welcome 🛒', yourName:'Your name', code:'Household code', join:'Join', title:'Our list',
-        add:'Add an item', addBtn:'Add', clear:'Clear checked', logout:'Sign out', del:'Delete',
-        empty:'The list is empty. Add something above.',
+        addItem:'Add an item', addBtn:'Add', addMore:'Add and new', clear:'Clear checked', logout:'Sign out', del:'Delete',
+        empty:'The list is empty. Add something above.', start:'Start shopping', navList:'List', navOften:'Often bought', navLabel:'Main menu',
+        whatNeed:'What do you need?', count:'Quantity', fewer:'Fewer', more:'More', aisle:'Aisle', note:'Note', optional:'(optional)',
+        notePh:'Brand, size, anything others should know', back:'Back',
         left:n => `${n} to get`, got:(g,t) => `${g} of ${t} in the basket`, addedBy:n => `Added by ${n}`,
+        bigLeft:n => n === 0 ? 'Everything is bought' : `${n} left to buy`, finish:'Done shopping', with:n => `${n} is shopping too`,
+        often:'Often bought', oftenHint:'Tap + to put something back on the list.', oftenEmpty:'Nothing yet. Items you buy more than once show up here.',
+        weekly:'About every week', sometimes:'Occasionally', onList:'On the list', addTo:n => `Add ${n} to the list`,
+        last:r => `last bought ${r}`, today:'today',
         wrongCode:'Wrong household code', tooMany:'Too many attempts, wait a minute', error:'Something went wrong',
-        badName:'Item name must be 1–100 characters', addFail:'Could not add item' },
+        badName:'Check name, quantity and note (max 100/20/200 characters)', dup:'Already on the list', addFail:'Could not add item', added:n => `Added ${n}`,
+        cat:{ produce:'Produce', dairy:'Dairy', pantry:'Pantry', meat:'Meat & fish', frozen:'Frozen', household:'Household', bakery:'Bakery', '':'Other' } },
 };
 let lang = document.documentElement.lang === 'en' ? 'en' : 'nb';
-let me = '', items = [];
 const t = k => T[lang][k];
+let me = '', items = [], history = [], others = [], addQty = 1, addCat = '', flash = '';
 
+/* ---------- tiny DOM helper (text only, never innerHTML with data) ---------- */
+function h(tag, props = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'class') e.className = v; else if (k.startsWith('on')) e[k] = v; else e.setAttribute(k, v);
+  }
+  e.append(...kids.flat().filter(x => x != null));
+  return e;
+}
+const svg = (inner, size = 22, sw = 2) => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('width', size); s.setAttribute('height', size); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('fill', 'none');
+  s.setAttribute('stroke', 'currentColor'); s.setAttribute('stroke-width', sw); s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round');
+  s.setAttribute('aria-hidden', 'true'); s.innerHTML = inner; return s; };  // inner is always a constant
+const CHECK = () => svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 16, 3);
+
+/* ---------- i18n ---------- */
 function setLang(l) {
   lang = l; document.documentElement.lang = l;
   document.cookie = 'sl_lang=' + l + '; Path=/; Max-Age=31536000; SameSite=Lax';
-  for (const e of document.querySelectorAll('[data-i18n]')) e.textContent = t(e.dataset.i18n);
-  for (const e of document.querySelectorAll('[data-i18n-ph]')) { e.placeholder = t(e.dataset.i18nPh); }
-  $('new').setAttribute('aria-label', t('add'));
-  for (const b of document.querySelectorAll('[data-lang]')) b.setAttribute('aria-pressed', b.dataset.lang === l);
   document.title = t('title');
-  render();
+  for (const e of document.querySelectorAll('[data-i18n]')) e.textContent = t(e.dataset.i18n);
+  for (const e of document.querySelectorAll('[data-i18n-ph]')) e.placeholder = t(e.dataset.i18nPh);
+  for (const e of document.querySelectorAll('[data-i18n-aria]')) e.setAttribute('aria-label', t(e.dataset.i18nAria));
+  for (const e of document.querySelectorAll('[data-back]')) e.setAttribute('aria-label', t('back'));
+  $('add-form').querySelector('#name').setAttribute('aria-label', t('whatNeed'));
+  for (const g of document.querySelectorAll('.lang')) {
+    g.replaceChildren(...['nb','en'].map(c => h('button', { type:'button', lang:c, 'aria-pressed': c === l, 'aria-label': c === 'nb' ? 'Norsk' : 'English', onclick: () => setLang(c) }, c === 'nb' ? 'NO' : 'EN')));
+  }
+  for (const n of document.querySelectorAll('[data-nav]')) n.replaceChildren(
+    navLink('#', 'list', t('navList'), '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>'),
+    navLink('#history', 'history', t('navOften'), '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'));
+  for (const n of document.querySelectorAll('[data-nav]')) n.setAttribute('aria-label', t('navLabel'));
+  renderChips(); route();
 }
-for (const b of document.querySelectorAll('[data-lang]')) b.onclick = () => setLang(b.dataset.lang);
+function navLink(href, view, label, icon) {
+  return h('a', { href, 'aria-current': current() === view ? 'page' : null }, svg(icon), label);
+}
 
+/* ---------- api ---------- */
 async function api(path, method = 'GET', body) {
   try {
     const r = await fetch('/api/' + path, { method, headers: body ? {'Content-Type':'application/json'} : {}, body: body && JSON.stringify(body) });
-    if (r.status === 401 && path !== 'login' && path !== 'me') show(false);
+    if (r.status === 401 && path !== 'login' && path !== 'me') { me = ''; route(); }
     return r;
   } catch { return { ok: false, status: 0, json: async () => [] }; }
 }
 
-function show(loggedIn) { $('login').hidden = loggedIn; $('app').hidden = !loggedIn; }
-
-const CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-
-function render() {
-  const ul = $('items'); ul.replaceChildren();
-  const got = items.filter(i => i.done).length;
-  $('progress').hidden = $('empty').hidden = true;
-  $('empty').hidden = items.length > 0;
-  $('progress').hidden = items.length === 0;
-  $('left').textContent = t('left')(items.length - got);
-  $('got').textContent = t('got')(got, items.length);
-  $('pct').style.width = (items.length ? Math.round(got / items.length * 100) : 0) + '%';
-  for (const it of items) {
-    const li = document.createElement('li'); if (it.done) li.className = 'done';
-    const tg = document.createElement('button'); tg.className = 'toggle'; tg.setAttribute('aria-pressed', it.done);
-    tg.onclick = async () => { await api('items/' + it.id, 'PATCH', { done: !it.done }); refresh(); };
-    const check = document.createElement('span'); check.className = 'check'; check.innerHTML = CHECK;
-    const name = document.createElement('span'); name.className = 'name'; name.textContent = it.name;
-    const who = document.createElement('span'); who.className = 'who' + (it.added_by === me ? ' me' : '');
-    who.textContent = [...it.added_by][0]?.toUpperCase() ?? ''; who.title = t('addedBy')(it.added_by);
-    who.setAttribute('aria-label', t('addedBy')(it.added_by));
-    tg.append(check, name, who);
-    const del = document.createElement('button'); del.className = 'del'; del.textContent = '✕'; del.setAttribute('aria-label', t('del') + ' ' + it.name);
-    del.onclick = async () => { await api('items/' + it.id, 'DELETE'); refresh(); };
-    li.append(tg, del); ul.append(li);
-  }
+/* ---------- routing ---------- */
+const VIEWS = ['login', 'list', 'add', 'shop', 'history'];
+function current() {
+  if (!me) return 'login';
+  const v = location.hash.slice(1);
+  return ['add', 'shop', 'history'].includes(v) ? v : 'list';
 }
-
-async function refresh() {
-  const r = await api('items');
-  if (!r.ok) return;
-  items = await r.json();
+let prev = null, tripTimer = null;
+function route() {
+  const v = current();
+  for (const id of VIEWS) $(id).hidden = id !== v;
+  document.body.classList.toggle('shop', v === 'shop');
+  document.querySelector('meta[name=theme-color]').content = v === 'shop' ? '#1F2A24' : '#FAF8F4';
+  if (v !== prev) {
+    if (v === 'shop') startTrip(); else if (prev === 'shop') stopTrip();
+    if (v === 'add') { addQty = 1; renderChips(); renderQty(); $('add-err').textContent = ''; setTimeout(() => $('name').focus(), 0); }
+    if (v === 'history') loadHistory();
+    prev = v; window.scrollTo(0, 0);
+  }
+  for (const n of document.querySelectorAll('[data-nav] a')) n.toggleAttribute('aria-current', false);
+  for (const n of document.querySelectorAll('[data-nav]')) { const a = n.children[v === 'history' ? 1 : 0]; if (a && (v === 'list' || v === 'history')) a.setAttribute('aria-current', 'page'); }
   render();
 }
+window.addEventListener('hashchange', route);
+const goBack = () => { location.hash = ''; };
+for (const b of document.querySelectorAll('[data-back]')) b.onclick = goBack;
 
-$('login-form').onsubmit = async e => {
-  e.preventDefault();
-  const r = await api('login', 'POST', { name: $('name').value, code: $('code').value });
-  if (r.ok) { me = (await r.json()).name; $('login-err').textContent = ''; show(true); refresh(); }
-  else $('login-err').textContent = r.status === 403 ? t('wrongCode') : r.status === 429 ? t('tooMany') : t('error');
+/* ---------- rendering ---------- */
+function sections(list) {
+  const by = new Map();
+  for (const c of [...CATS, '']) by.set(c, []);
+  for (const it of list) (by.get(it.category) ?? by.get('')).push(it);
+  const coll = new Intl.Collator(lang === 'nb' ? 'nb' : 'en');   // æ ø å sort last in Norwegian
+  return [...by].filter(([, v]) => v.length)
+    .map(([c, v]) => [c, v.sort((a, b) => (a.done - b.done) || coll.compare(a.name, b.name))]);
+}
+function itemRow(it, shop) {
+  const check = h('span', { class:'check' }, CHECK());
+  const who = h('span', { class:'who' + (it.added_by === me ? ' me' : ''), 'aria-label': t('addedBy')(it.added_by), title: t('addedBy')(it.added_by) }, [...it.added_by][0]?.toUpperCase() ?? '');
+  const tg = h('button', { class:'toggle', 'aria-pressed': it.done, onclick: async () => { await api('items/' + it.id, 'PATCH', { done: !it.done }); refresh(); } },
+    check, h('span', { class:'txt' }, h('span', { class:'nm' }, it.name), it.note ? h('span', { class:'note' }, it.note) : null),
+    it.qty ? h('span', { class:'qty' }, it.qty) : null, who);
+  const del = h('button', { class:'del', 'aria-label': t('del') + ' ' + it.name, onclick: async () => { await api('items/' + it.id, 'DELETE'); refresh(); } }, '✕');
+  return h('div', { class:'row-item' + (it.done ? ' done' : '') }, tg, del);
+}
+function progress() {
+  const got = items.filter(i => i.done).length, n = items.length;
+  for (const p of document.querySelectorAll('[data-pct]')) p.style.width = (n ? Math.round(got / n * 100) : 0) + '%';
+  for (const e of document.querySelectorAll('[data-left]')) e.textContent = t('left')(n - got);
+  for (const e of document.querySelectorAll('[data-got]')) e.textContent = t('got')(got, n);
+  document.querySelector('[data-progress]').hidden = n === 0;
+  $('big').textContent = t('bigLeft')(n - got);
+}
+function render() {
+  const v = current();
+  progress();
+  if (v === 'list' || v === 'shop') {
+    const target = v === 'list' ? $('list-items') : $('shop-items');
+    target.replaceChildren(...sections(items).map(([c, its]) =>
+      h('section', { class:'aisle' }, h('h2', {}, t('cat')[c]), its.map(it => itemRow(it, v === 'shop')))));
+    $('list-empty').hidden = items.length > 0;
+  }
+  if (v === 'shop') $('with').textContent = others.length ? t('with')(others.join(', ')) : '';
+  if (v === 'history') renderHistory();
+}
+
+function ago(ts) {
+  const days = Math.floor((Date.now() / 1000 - ts) / 86400), nb = lang === 'nb';
+  if (days < 1) return t('today');
+  if (days === 1) return nb ? 'i går' : 'yesterday';
+  if (days < 14) return nb ? `for ${days} dager siden` : `${days} days ago`;
+  const w = Math.floor(days / 7);
+  return nb ? `for ${w} uker siden` : `${w} weeks ago`;
+}
+function renderHistory() {
+  $('hist-empty').hidden = history.length > 0;
+  const group = f => history.filter(x => x.frequency === f);
+  $('hist-items').replaceChildren(...['weekly', 'sometimes'].filter(f => group(f).length).map(f =>
+    h('section', { class:'aisle', style:'padding-top:22px' }, h('h2', {}, t(f)), group(f).map(x =>
+      h('div', { class:'hist' },
+        h('div', { class:'txt' }, h('span', { class:'nm' }, x.name), h('span', {}, `${t('cat')[x.category] ?? t('cat')['']} · ${t('last')(ago(x.last_bought))}`)),
+        x.on_list ? h('span', { class:'onlist' }, svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 14, 3), t('onList'))
+          : h('button', { class:'add', 'aria-label': t('addTo')(x.name), onclick: async () => {
+              await api('items', 'POST', { name: x.name, qty: x.qty, category: x.category }); await Promise.all([refresh(), loadHistory()]); } },
+              (() => { const s = svg('<path d="M12 5v14M5 12h14"/>', 20, 2.4); s.setAttribute('stroke', '#fff'); return s; })()))))));
+}
+async function loadHistory() { const r = await api('history'); if (r.ok) { history = await r.json(); if (current() === 'history') renderHistory(); } }
+
+/* ---------- add screen ---------- */
+function renderChips() {
+  $('chips').replaceChildren(...CATS.slice(0, 6).concat('bakery').map(c =>
+    h('button', { type:'button', 'aria-pressed': addCat === c, onclick: () => { addCat = addCat === c ? '' : c; renderChips(); } }, t('cat')[c])));
+}
+function renderQty() { $('qty').textContent = addQty; }
+$('less').onclick = () => { addQty = Math.max(1, addQty - 1); renderQty(); };
+$('more').onclick = () => { addQty = Math.min(99, addQty + 1); renderQty(); };
+$('go-add').onclick = () => { location.hash = 'add'; };
+
+let suggTimer;
+$('name').oninput = () => {
+  clearTimeout(suggTimer);
+  const q = $('name').value.trim();
+  if (!q) return void ($('sugg').hidden = true);
+  suggTimer = setTimeout(async () => {
+    const r = await api('suggest?q=' + encodeURIComponent(q));
+    if (!r.ok || $('name').value.trim() !== q) return;
+    const s = await r.json();
+    $('sugg').hidden = s.length === 0;
+    $('sugg').replaceChildren(...s.map(x => h('button', { type:'button', onclick: () => {
+      $('name').value = x.name; addCat = x.category; renderChips(); $('sugg').hidden = true; $('note').focus(); } },
+      h('span', {}, x.name), h('small', {}, t('cat')[x.category]))));
+  }, 150);
 };
 $('add-form').onsubmit = async e => {
   e.preventDefault();
-  const r = await api('items', 'POST', { name: $('new').value });
-  if (r.ok) $('new').value = ''; else alert(r.status === 400 ? t('badName') : t('addFail'));
-  refresh();
+  const more = e.submitter?.value === 'more';
+  const name = $('name').value.trim();
+  const r = await api('items', 'POST', { name, qty: addQty > 1 ? String(addQty) : '', category: addCat, note: $('note').value });
+  if (!r.ok) { $('add-err').style.color = ''; $('add-err').textContent = r.status === 409 ? t('dup') : r.status === 400 ? t('badName') : t('addFail'); return; }
+  $('name').value = $('note').value = ''; $('sugg').hidden = true; addQty = 1; addCat = ''; renderChips(); renderQty();
+  await refresh();
+  if (more) { $('add-err').style.color = 'var(--accent)'; $('add-err').textContent = t('added')(name); $('name').focus(); } else goBack();
+};
+
+/* ---------- shopping trip ---------- */
+async function ping() { const r = await api('trip', 'POST'); if (r.ok) { others = await r.json(); render(); } }
+function startTrip() { ping(); tripTimer = setInterval(ping, 10000); }
+function stopTrip() { clearInterval(tripTimer); others = []; api('trip', 'DELETE'); }
+$('finish').onclick = async () => { await api('items/clear-done', 'POST'); await refresh(); goBack(); };
+
+/* ---------- session ---------- */
+async function refresh() { const r = await api('items'); if (r.ok) { items = await r.json(); render(); } }
+$('login-form').onsubmit = async e => {
+  e.preventDefault();
+  const r = await api('login', 'POST', { name: $('login-name').value, code: $('login-code').value });
+  if (r.ok) { me = (await r.json()).name; $('login-err').textContent = ''; $('login-code').value = ''; route(); refresh(); }
+  else $('login-err').textContent = r.status === 403 ? t('wrongCode') : r.status === 429 ? t('tooMany') : t('error');
 };
 $('clear').onclick = async () => { await api('items/clear-done', 'POST'); refresh(); };
-$('logout').onclick = async () => { await api('logout', 'POST'); show(false); };
+$('logout').onclick = async () => { stopTrip(); await api('logout', 'POST'); me = ''; items = []; history = []; location.hash = ''; prev = null; route(); };
 
 setLang(lang);
-(async () => { const r = await api('me'); if (r.ok) { me = (await r.json()).name; show(true); refresh(); } else show(false); })();
-setInterval(() => { if (!$('app').hidden && !document.hidden) refresh(); }, 5000);
+(async () => { const r = await api('me'); if (r.ok) { me = (await r.json()).name; route(); refresh(); } else route(); })();
+setInterval(() => { if (me && !document.hidden) { refresh(); if (current() === 'history') loadHistory(); } }, 5000);
 </script>
 </body>
 </html>
