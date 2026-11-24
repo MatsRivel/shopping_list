@@ -16,6 +16,8 @@ const INDEX_HTML: &str = include_str!("../static/index.html");
 const COOKIE: &str = "sl_session";
 
 const SESSION_TTL_SECS: i64 = 31_536_000;
+const THEMES: [&str; 4] = ["salvie", "mynte", "oliven", "skog"];
+const DEFAULT_THEME: &str = "salvie";
 const TRIP_TTL: Duration = Duration::from_secs(30);
 /// Aisle ids the UI knows about; "" means unsorted.
 const CATEGORIES: [&str; 8] = ["", "produce", "dairy", "pantry", "meat", "frozen", "household", "bakery"];
@@ -61,6 +63,7 @@ fn init_db(path: &str) -> Connection {
             name_key TEXT NOT NULL, name TEXT NOT NULL,
             category TEXT NOT NULL DEFAULT '', qty TEXT NOT NULL DEFAULT '',
             bought_at INTEGER NOT NULL DEFAULT (unixepoch()));
+         CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
          CREATE INDEX IF NOT EXISTS purchases_key ON purchases(name_key);
          CREATE INDEX IF NOT EXISTS purchases_item ON purchases(item_id);",
     )
@@ -420,13 +423,49 @@ async fn trip_end(User(who): User, State(app): State<App>) -> StatusCode {
     StatusCode::NO_CONTENT
 }
 
-/// Serve the page with `<html lang>` matching the visitor's saved language (default Norwegian).
-async fn index(headers: HeaderMap) -> Html<String> {
+/// The household's colour palette (shared by everyone).
+fn theme(db: &Connection) -> String {
+    db.query_row("SELECT value FROM settings WHERE key='theme'", [], |r| r.get::<_, String>(0))
+        .ok()
+        .filter(|t| THEMES.contains(&t.as_str()))
+        .unwrap_or_else(|| DEFAULT_THEME.into())
+}
+
+#[derive(Serialize, Deserialize)]
+struct Settings {
+    theme: String,
+}
+
+async fn get_settings(_: User, State(app): State<App>) -> Json<Settings> {
+    Json(Settings { theme: theme(&db(&app)) })
+}
+
+async fn put_settings(_: User, State(app): State<App>, Json(s): Json<Settings>) -> StatusCode {
+    if !THEMES.contains(&s.theme.as_str()) {
+        return StatusCode::BAD_REQUEST;
+    }
+    match db(&app).execute(
+        "INSERT INTO settings(key,value) VALUES('theme',?1) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        [s.theme],
+    ) {
+        Ok(_) => StatusCode::NO_CONTENT,
+        Err(e) => internal(e),
+    }
+}
+
+/// Serve the page with `<html lang>` and `data-theme` already set, so there is no flash of the wrong
+/// language or palette. Language comes from the visitor's cookie (default Norwegian), theme from the household.
+async fn index(State(app): State<App>, headers: HeaderMap) -> Html<String> {
     let lang = match cookie(&headers, "sl_lang").as_deref() {
         Some("en") => "en",
         _ => "nb",
     };
-    Html(INDEX_HTML.replacen("<html lang=\"nb\">", &format!("<html lang=\"{lang}\">"), 1))
+    let theme = theme(&db(&app));
+    Html(INDEX_HTML.replacen(
+        "<html lang=\"nb\" data-theme=\"salvie\">",
+        &format!("<html lang=\"{lang}\" data-theme=\"{theme}\">"),
+        1,
+    ))
 }
 
 async fn shutdown_signal() {
@@ -468,6 +507,7 @@ fn router(app: App) -> Router {
         .route("/api/items", get(list).post(add))
         .route("/api/items/{id}", patch(set_done).delete(remove))
         .route("/api/items/clear-done", post(clear_done))
+        .route("/api/settings", get(get_settings).put(put_settings))
         .route("/api/history", get(history))
         .route("/api/suggest", get(suggest))
         .route("/api/trip", post(trip_ping).delete(trip_end))
@@ -604,7 +644,21 @@ mod tests {
     #[tokio::test]
     async fn index_lang_follows_cookie() {
         let app = test_app();
-        assert!(call(&app, "GET", "/", None, None).await.2.contains(r#"<html lang="nb">"#));
-        assert!(call(&app, "GET", "/", Some("sl_lang=en"), None).await.2.contains(r#"<html lang="en">"#));
+        assert!(call(&app, "GET", "/", None, None).await.2.contains(r#"<html lang="nb" data-theme="salvie">"#));
+        assert!(call(&app, "GET", "/", Some("sl_lang=en"), None).await.2.contains(r#"<html lang="en" data-theme="salvie">"#));
+    }
+
+    #[tokio::test]
+    async fn theme_is_shared_validated_and_served() {
+        let app = test_app();
+        assert_eq!(call(&app, "GET", "/api/settings", None, None).await.0, StatusCode::UNAUTHORIZED);
+        let c = login_as(&app, "J").await;
+        assert_eq!(call(&app, "GET", "/api/settings", Some(&c), None).await.2, r#"{"theme":"salvie"}"#);
+        assert_eq!(call(&app, "PUT", "/api/settings", Some(&c), Some(r#"{"theme":"hotpink"}"#)).await.0, StatusCode::BAD_REQUEST);
+        assert_eq!(call(&app, "PUT", "/api/settings", Some(&c), Some(r#"{"theme":"skog"}"#)).await.0, StatusCode::NO_CONTENT);
+        // Another person (and the login page, before signing in) gets the household's palette.
+        let k = login_as(&app, "K").await;
+        assert_eq!(call(&app, "GET", "/api/settings", Some(&k), None).await.2, r#"{"theme":"skog"}"#);
+        assert!(call(&app, "GET", "/", None, None).await.2.contains(r#"data-theme="skog""#));
     }
 }

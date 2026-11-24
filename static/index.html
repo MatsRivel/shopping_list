@@ -1,64 +1,68 @@
 <!doctype html>
-<html lang="nb">
+<html lang="nb" data-theme="salvie">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#FAF8F4">
+<meta name="theme-color" content="#BCD3B8">
 <title>Vår liste</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#FAF8F4; --fg:#1F2421; --accent:#2F6F55; --muted:#5A615C; --line:#ECE7DD; --border:#D9D3C7; --track:#E7E2D8; --peach:#F0C9A8; --card:#fff; }
+  /* Palettes. Each maps onto the same set of roles; <html data-theme> picks one (stored per household). */
+  [data-theme="salvie"] { --bg:#F1F5EC; --card:#FFFFFF; --block:#BCD3B8; --onblock:#1F3A2E; --onblock-muted:#3A5444; --ink:#1F2A24; --muted:#526459; --edge:#799180; --line:#DCE5D6; --primary:#2F5D46; --onprimary:#FFFFFF; --partner:#F4C9C2; --onpartner:#4A2420; --track:#A4BFA0; --fill:#1F3A2E; }
+  [data-theme="mynte"]  { --bg:#EFF8F5; --card:#FFFFFF; --block:#B9E2D5; --onblock:#123B35; --onblock-muted:#2F5A52; --ink:#14302B; --muted:#4D6762; --edge:#6B968A; --line:#D3E8E1; --primary:#1F6F63; --onprimary:#FFFFFF; --partner:#DACDF2; --onpartner:#2E2150; --track:#9ACDBD; --fill:#123B35; }
+  [data-theme="oliven"] { --bg:#F6F6E8; --card:#FFFEF8; --block:#D6D9A3; --onblock:#2F3416; --onblock-muted:#4C5226; --ink:#2B2E16; --muted:#5E6240; --edge:#8C8F60; --line:#E4E5C8; --primary:#55602B; --onprimary:#FFFFFF; --partner:#F2D58B; --onpartner:#4A3708; --track:#BCC084; --fill:#2F3416; }
+  [data-theme="skog"]   { --bg:#16231C; --card:#1F3027; --block:#24392E; --onblock:#E6F0E4; --onblock-muted:#B7CBBB; --ink:#E6F0E4; --muted:#AFC2B4; --edge:#5F7D6B; --line:#2E4337; --primary:#8FD1AE; --onprimary:#12261C; --partner:#E8BBA9; --onpartner:#3B1D12; --track:#3A5546; --fill:#8FD1AE; }
+  :root { color-scheme: light; } [data-theme="skog"] { color-scheme: dark; }
+
   * { box-sizing: border-box; }
-  body { margin:0; font:17px/1.4 Inter,system-ui,sans-serif; background:var(--bg); color:var(--fg); }
-  body.shop { --bg:#1F2A24; --fg:#F4F1EA; --muted:#B9C4BC; --line:#38463E; --track:#38463E; }
+  body { margin:0; font:17px/1.4 'DM Sans',system-ui,sans-serif; background:var(--bg); color:var(--ink); }
   button, input { font-family: inherit; }
   [hidden] { display:none !important; }
-  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-  .shop :focus-visible { outline-color:#8FD1AE; }
-  h1 { margin:0; font:700 30px 'Space Grotesk',Inter,sans-serif; letter-spacing:-.5px; }
-  h2 { margin:0 0 4px; font-size:12px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; color:var(--muted); }
+  :focus-visible { outline:3px solid var(--primary); outline-offset:2px; }
+  .block :focus-visible { outline-color:var(--onblock); }
+  h1 { margin:0; font:800 34px 'Bricolage Grotesque','DM Sans',sans-serif; letter-spacing:-.8px; }
+  h2 { margin:0 0 2px; font-size:14px; font-weight:600; color:var(--muted); }
   svg { flex:none; }
 
   #shell { max-width:520px; min-height:100dvh; margin:0 auto; display:flex; flex-direction:column; }
-  .view { flex:1; padding:24px 20px 16px; }
+  .screen { flex:1; display:flex; flex-direction:column; }
+  .view { flex:1; padding:16px 20px; }
+  /* the big sage header block with the rounded bottom edge */
+  .block { padding:24px 20px 22px; border-radius:0 0 32px 32px; background:var(--block); color:var(--onblock); display:flex; flex-direction:column; gap:14px; }
+  .block p { margin:0; font-size:15px; color:var(--onblock-muted); }
   .head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-  .back { display:flex; align-items:center; gap:4px; margin:-8px 0 0 -12px; padding:0 12px 0 4px; border:0; background:none; color:inherit; cursor:pointer; }
-  .back .circle { width:48px; height:48px; display:flex; align-items:center; justify-content:center; }
-  .subhead h1 { font-size:24px; }
-  .sub { color:var(--muted); font-size:15px; margin:4px 0 0; }
+  .back { width:48px; height:48px; margin:-8px 0 -8px -12px; display:flex; align-items:center; justify-content:center; border:0; background:none; color:inherit; cursor:pointer; border-radius:24px; }
 
-  .lang { display:flex; padding:3px; border-radius:20px; background:#ECE7DD; }
-  .lang button { min-width:44px; height:36px; border:0; border-radius:18px; background:transparent; color:#3F4641; font-size:13px; font-weight:600; cursor:pointer; }
-  .lang button[aria-pressed=true] { background:var(--accent); color:#fff; }
+  .lang { display:flex; padding:3px; border-radius:20px; background:var(--track); }
+  .lang button { min-width:44px; height:36px; border:0; border-radius:18px; background:transparent; color:var(--onblock); font-size:13px; font-weight:600; cursor:pointer; }
+  .lang button[aria-pressed=true] { background:var(--primary); color:var(--onprimary); }
 
-  .progress { margin:12px 0 4px; }
-  .progress .row { display:flex; justify-content:space-between; gap:8px; font-size:14px; color:var(--muted); }
-  .bar { height:6px; border-radius:3px; background:var(--track); margin-top:8px; overflow:hidden; }
-  .bar div { height:100%; border-radius:3px; background:var(--accent); width:0; transition:width .2s; }
+  .progress .row { display:flex; justify-content:space-between; gap:8px; font-size:14px; font-weight:500; color:var(--onblock-muted); }
+  .bar { height:8px; border-radius:4px; background:var(--track); margin-top:8px; overflow:hidden; }
+  .bar div { height:100%; border-radius:4px; background:var(--fill); width:0; transition:width .2s; }
 
-  .addrow { display:flex; align-items:center; gap:12px; width:100%; height:52px; margin:12px 0 4px; padding:0 16px; border-radius:14px; background:var(--card); border:1.5px solid var(--border); color:var(--muted); font-size:16px; cursor:pointer; text-align:left; }
+  .addrow { display:flex; align-items:center; gap:12px; width:100%; height:52px; margin:0 0 4px; padding:0 16px; border-radius:26px; background:var(--card); border:1.5px solid var(--edge); color:var(--muted); font-size:16px; cursor:pointer; text-align:left; }
 
-  .btn { height:56px; padding:0 22px; border:0; border-radius:28px; background:var(--accent); color:#fff; font-size:17px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; }
-  .btn.ghost { background:var(--card); color:var(--accent); border:1.5px solid var(--accent); font-size:16px; }
+  .btn { height:56px; padding:0 22px; border:0; border-radius:28px; background:var(--primary); color:var(--onprimary); font-size:17px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; text-decoration:none; }
+  .btn.ghost { background:var(--card); color:var(--primary); border:1.5px solid var(--primary); font-size:16px; }
   .btn.wide { width:100%; }
-  .shop .btn { background:#8FD1AE; color:#1F2A24; }
 
-  section.aisle { padding-top:14px; }
+  section.aisle { padding-top:16px; }
   .row-item { display:flex; align-items:center; border-bottom:1px solid var(--line); }
-  .toggle { flex:1; min-width:0; display:flex; align-items:center; gap:14px; min-height:56px; padding:6px 0; background:none; border:0; text-align:left; color:inherit; font-size:17px; cursor:pointer; }
+  .toggle { flex:1; min-width:0; display:flex; align-items:center; gap:14px; min-height:58px; padding:6px 0; background:none; border:0; text-align:left; color:inherit; font-size:17px; cursor:pointer; }
   .txt { flex:1; min-width:0; display:flex; flex-direction:column; }
   .nm { font-weight:500; overflow-wrap:anywhere; }
   .note { font-size:13px; color:var(--muted); overflow-wrap:anywhere; }
-  .done .nm { color:#6B726D; text-decoration:line-through; font-weight:400; }
+  .done .nm { color:var(--muted); text-decoration:line-through; font-weight:400; }
   .qty { font-size:14px; color:var(--muted); }
-  .check { width:28px; height:28px; border-radius:14px; border:2px solid #8A918B; display:flex; align-items:center; justify-content:center; }
-  .done .check { background:var(--accent); border-color:var(--accent); }
+  .check { width:30px; height:30px; border-radius:15px; border:2px solid var(--edge); background:var(--card); display:flex; align-items:center; justify-content:center; }
+  .done .check { background:var(--primary); border-color:var(--primary); color:var(--onprimary); }
   .check svg { display:none; } .done .check svg { display:block; }
-  .who { width:24px; height:24px; border-radius:12px; background:var(--peach); color:#3A2412; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex:none; }
-  .who.me { background:var(--accent); color:#fff; }
-  .del { flex:none; width:44px; height:44px; border:0; background:none; color:#8A918B; cursor:pointer; border-radius:22px; }
-  .del:hover { color:var(--fg); }
+  .who { width:24px; height:24px; border-radius:12px; background:var(--partner); color:var(--onpartner); font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex:none; }
+  .who.me { background:var(--primary); color:var(--onprimary); }
+  .del { flex:none; width:44px; height:44px; border:0; background:none; color:var(--muted); cursor:pointer; border-radius:22px; }
+  .del:hover { color:var(--ink); }
   .empty { color:var(--muted); text-align:center; padding:32px 0; }
   .foot { display:flex; justify-content:space-between; margin-top:8px; }
   .link { background:none; border:0; color:var(--muted); font-size:15px; min-height:44px; padding:0 4px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
@@ -66,80 +70,95 @@
   /* bottom bar */
   .bottom { position:sticky; bottom:0; background:var(--bg); }
   .bottom .cta { padding:0 20px 12px; }
-  nav { height:64px; display:flex; border-top:1px solid #E4DFD4; background:#fff; padding-bottom:env(safe-area-inset-bottom); box-sizing:content-box; }
+  .bottom.solid { background:var(--card); border-top:1px solid var(--line); padding:12px 20px calc(24px + env(safe-area-inset-bottom)); }
+  nav { height:64px; display:flex; border-top:1px solid var(--line); background:var(--card); padding-bottom:env(safe-area-inset-bottom); box-sizing:content-box; }
   nav a { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--muted); font-size:12px; font-weight:500; text-decoration:none; }
-  nav a[aria-current=page] { color:var(--accent); font-weight:600; }
+  nav a[aria-current=page] { color:var(--primary); font-weight:600; }
 
   /* inputs */
   label, .lbl { font-size:14px; font-weight:600; }
-  input[type=text], input[type=password] { width:100%; height:52px; padding:0 16px; font-size:16px; color:var(--fg); background:var(--card); border:1.5px solid var(--border); border-radius:14px; }
-  input:focus { outline:none; border-color:var(--accent); }
+  input[type=text], input[type=password] { width:100%; height:52px; padding:0 18px; font-size:16px; color:var(--ink); background:var(--card); border:1.5px solid var(--edge); border-radius:26px; }
+  input::placeholder { color:var(--muted); opacity:1; }
+  input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 1px var(--primary); }
   .field { display:flex; flex-direction:column; gap:8px; margin-bottom:24px; }
-  #name { height:56px; font-size:18px; border-width:2px; }
-  .sugg { display:flex; flex-direction:column; background:var(--card); border:1px solid #E4DFD4; border-radius:14px; overflow:hidden; }
-  .sugg button { display:flex; justify-content:space-between; align-items:center; min-height:48px; padding:0 16px; background:none; border:0; border-bottom:1px solid var(--line); font-size:16px; color:var(--fg); text-align:left; cursor:pointer; }
+  #name { height:56px; font-size:18px; border-radius:28px; }
+  .sugg { display:flex; flex-direction:column; background:var(--card); border:1.5px solid var(--line); border-radius:20px; overflow:hidden; }
+  .sugg button { display:flex; justify-content:space-between; align-items:center; min-height:48px; padding:0 18px; background:none; border:0; border-bottom:1px solid var(--line); font-size:16px; color:var(--ink); text-align:left; cursor:pointer; }
   .sugg button:last-child { border-bottom:0; }
   .sugg small { font-size:13px; color:var(--muted); }
   .stepper { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
   .stepper .ctl { display:flex; align-items:center; gap:4px; }
-  .stepper button { width:48px; height:48px; border-radius:24px; border:1.5px solid var(--border); background:var(--card); display:flex; align-items:center; justify-content:center; color:var(--fg); cursor:pointer; }
-  .stepper output { min-width:48px; text-align:center; font-size:20px; font-weight:600; }
+  .stepper button { width:48px; height:48px; border-radius:24px; border:1.5px solid var(--edge); background:var(--card); display:flex; align-items:center; justify-content:center; color:var(--ink); cursor:pointer; }
+  .stepper output { min-width:48px; text-align:center; font-size:22px; font-weight:600; }
   .chips { display:flex; flex-wrap:wrap; gap:8px; }
-  .chips button { height:44px; padding:0 18px; border-radius:22px; border:1.5px solid var(--border); background:var(--card); font-size:15px; color:var(--fg); cursor:pointer; }
-  .chips button[aria-pressed=true] { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
-  .actions { position:sticky; bottom:0; display:flex; gap:12px; padding:12px 20px 20px; background:#fff; border-top:1px solid #E4DFD4; }
+  .chips button { height:44px; padding:0 18px; border-radius:22px; border:1.5px solid var(--edge); background:var(--card); font-size:15px; color:var(--ink); cursor:pointer; }
+  .chips button[aria-pressed=true] { background:var(--primary); border-color:var(--primary); color:var(--onprimary); font-weight:600; }
+  .actions { position:sticky; bottom:0; display:flex; gap:12px; padding:12px 20px 20px; background:var(--card); border-top:1px solid var(--line); }
   .actions .btn:last-child { flex:1; }
   .err { color:#B3261E; min-height:1.2em; font-size:15px; }
-  #flash { margin:0 0 12px; color:var(--accent); font-weight:600; min-height:1.4em; }
+  [data-theme="skog"] .err { color:#FFB4A9; }
 
-  /* shop */
-  .shop .big { font:700 34px 'Space Grotesk',Inter,sans-serif; letter-spacing:-.5px; margin:0 0 12px; }
-  .shop .bar div { background:#8FD1AE; } .shop .bar { height:8px; }
-  .shop h2 { font-size:13px; margin:16px 0 8px; }
-  .shop .row-item { border:0; margin-bottom:8px; background:#2F3F36; border-radius:16px; padding:0 4px 0 16px; }
-  .shop .row-item.done { background:#2B3A32; }
+  /* shopping trip: big pill rows */
+  .block .big { font:800 38px 'Bricolage Grotesque','DM Sans',sans-serif; letter-spacing:-1px; line-height:1.1; margin:0; color:var(--onblock); }
+  .bar.lg { height:10px; border-radius:5px; } .bar.lg div { border-radius:5px; }
+  .with { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:500; color:var(--onblock-muted); }
+  .shop section.aisle { padding-top:18px; } .shop h2 { font-size:15px; margin-bottom:8px; }
+  .shop .row-item { border:1.5px solid var(--edge); background:var(--card); border-radius:34px; margin-bottom:8px; padding:0 4px 0 18px; }
+  .shop .row-item.done { background:var(--bg); border-color:var(--line); color:var(--muted); }
   .shop .toggle { min-height:68px; font-size:20px; gap:16px; }
-  .shop .check { width:34px; height:34px; border-radius:17px; border:2.5px solid #8FA096; }
-  .shop .done .check { background:#8FD1AE; border-color:#8FD1AE; }
-  .shop .done .check svg { stroke:#1F2A24; }
-  .shop .qty { font-size:17px; font-weight:600; color:var(--fg); }
+  .shop .check { width:34px; height:34px; border-radius:17px; border-width:2.5px; }
+  .shop .qty { font-size:17px; font-weight:600; color:inherit; }
   .shop .del, .shop .who { display:none; }
-  .shop .done .nm { color:#B9C4BC; }
-  .shop .bottom { background:var(--bg); border-top:1px solid #38463E; padding:12px 20px 24px; }
-  .with { font-size:14px; color:var(--muted); }
 
   /* history */
-  .hist { display:flex; align-items:center; gap:12px; min-height:60px; border-bottom:1px solid var(--line); }
+  .hist { display:flex; align-items:center; gap:12px; min-height:62px; border-bottom:1px solid var(--line); }
   .hist .txt span:last-child { font-size:13px; color:var(--muted); }
-  .hist .add { width:48px; height:48px; border-radius:24px; border:0; background:var(--accent); display:flex; align-items:center; justify-content:center; cursor:pointer; }
-  .onlist { font-size:13px; color:#1F5A43; font-weight:600; display:flex; align-items:center; gap:4px; }
+  .hist .add { width:48px; height:48px; border-radius:24px; border:0; background:var(--primary); color:var(--onprimary); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .onlist { font-size:14px; color:var(--primary); font-weight:600; display:flex; align-items:center; gap:4px; }
+
+  /* appearance */
+  .cards { display:flex; flex-direction:column; gap:12px; }
+  .pal { display:flex; align-items:center; gap:14px; width:100%; padding:14px 16px; border-radius:22px; text-align:left; cursor:pointer; color:var(--ink); background:var(--card); border:1.5px solid var(--line); }
+  .pal[aria-pressed=true] { border:2.5px solid var(--primary); padding:13px 15px; }
+  .pal .sw { display:flex; flex:none; }
+  .pal .sw i { width:34px; height:34px; border-radius:17px; border:2px solid var(--card); margin-left:-10px; }
+  .pal .sw i { box-shadow:inset 0 0 0 1px rgba(127,127,127,.35); }
+  .pal .sw i:first-child { margin-left:0; }
+  .pal .sw .a { background:var(--block); } .pal .sw .b { background:var(--primary); } .pal .sw .c { background:var(--partner); }
+  .pal .t { flex:1; display:flex; flex-direction:column; gap:2px; }
+  .pal .t b { font-size:17px; font-weight:600; } .pal .t span { font-size:14px; color:var(--muted); }
+  .pal .tick { width:28px; height:28px; border-radius:14px; background:var(--primary); color:var(--onprimary); display:flex; align-items:center; justify-content:center; }
+  .preview { margin-top:16px; padding:16px; border-radius:22px; background:var(--card); border:1.5px solid var(--line); display:flex; flex-direction:column; gap:10px; }
+  .preview > span { font-size:14px; font-weight:600; color:var(--muted); }
+  .preview .p { display:flex; align-items:center; gap:12px; min-height:44px; }
 </style>
 </head>
 <body>
 <div id="shell">
 
   <!-- login -->
-  <div class="view" id="login" hidden>
-    <div class="head" style="justify-content:flex-end"><div class="lang" role="group" aria-label="Språk / Language"></div></div>
-    <h1 data-i18n="welcome" style="margin-top:16px"></h1>
-    <form id="login-form" style="display:flex;flex-direction:column;gap:12px;margin-top:24px">
-      <input type="text" id="login-name" data-i18n-ph="yourName" autocomplete="given-name" required aria-label="Navn">
-      <input type="password" id="login-code" data-i18n-ph="code" required aria-label="Kode">
-      <button class="btn wide" data-i18n="join"></button>
-      <div class="err" id="login-err" role="alert"></div>
-    </form>
+  <div class="screen" id="login" hidden>
+    <div class="block"><div class="head" style="justify-content:flex-end"><div class="lang" role="group" aria-label="Språk / Language"></div></div>
+      <h1 data-i18n="welcome"></h1></div>
+    <div class="view" style="padding-top:24px">
+      <form id="login-form" style="display:flex;flex-direction:column;gap:12px">
+        <input type="text" id="login-name" data-i18n-ph="yourName" autocomplete="given-name" required aria-label="Navn">
+        <input type="password" id="login-code" data-i18n-ph="code" required aria-label="Kode">
+        <button class="btn wide" data-i18n="join"></button>
+        <div class="err" id="login-err" role="alert"></div>
+      </form>
+    </div>
   </div>
 
   <!-- list -->
-  <div id="list" hidden style="display:flex;flex-direction:column;flex:1">
-    <div class="view">
-      <div class="head">
-        <h1 data-i18n="title"></h1>
-        <div class="lang" role="group" aria-label="Språk / Language"></div>
-      </div>
+  <div class="screen" id="list" hidden>
+    <div class="block">
+      <div class="head"><h1 data-i18n="title"></h1><div class="lang" role="group" aria-label="Språk / Language"></div></div>
       <div class="progress" data-progress><div class="row"><span data-left></span><span data-got></span></div><div class="bar"><div data-pct></div></div></div>
+    </div>
+    <div class="view">
       <button class="addrow" id="go-add" type="button">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F6F55" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         <span data-i18n="addItem"></span>
       </button>
       <div id="list-items"></div>
@@ -147,18 +166,21 @@
       <div class="foot"><button class="link" id="clear" data-i18n="clear"></button><button class="link" id="logout" data-i18n="logout"></button></div>
     </div>
     <div class="bottom">
-      <div class="cta"><a class="btn wide" href="#shop" style="text-decoration:none">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6h15l-1.5 8H7z"/><path d="M5 6L4 3H2"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>
+      <div class="cta"><a class="btn wide" href="#shop" style="height:54px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6h15l-1.5 8H7z"/><path d="M5 6L4 3H2"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>
         <span data-i18n="start"></span></a></div>
       <nav data-nav></nav>
     </div>
   </div>
 
   <!-- add -->
-  <div id="add" hidden style="display:flex;flex-direction:column;flex:1">
-    <div class="view subhead">
-      <div class="head" style="justify-content:flex-start;gap:4px"><button class="back" type="button" data-back style="margin:-8px 0 0 -12px"><span class="circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></span></button><h1 data-i18n="addItem" style="margin-top:-8px"></h1></div>
-      <form id="add-form" style="margin-top:12px" autocomplete="off">
+  <div class="screen" id="add" hidden>
+    <div class="block" style="flex-direction:row;align-items:center;gap:4px;padding:16px 20px 20px 8px">
+      <button class="back" type="button" data-back style="margin:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h1 data-i18n="addItem" style="font-size:28px;letter-spacing:-.6px"></h1>
+    </div>
+    <div class="view" style="padding-top:20px">
+      <form id="add-form" autocomplete="off">
         <div class="field">
           <label for="name" data-i18n="whatNeed"></label>
           <input type="text" id="name" maxlength="100" required>
@@ -180,23 +202,35 @@
   </div>
 
   <!-- shop -->
-  <div id="shop" hidden style="display:flex;flex-direction:column;flex:1">
-    <div class="view" style="padding-top:16px">
-      <div class="head"><button class="back" type="button" data-back aria-label="Tilbake"><span class="circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></span></button><span class="with" id="with"></span></div>
-      <p class="big" id="big"></p>
-      <div class="bar"><div data-pct></div></div>
-      <div id="shop-items"></div>
+  <div class="screen shop" id="shop" hidden>
+    <div class="block" style="padding:12px 20px 22px 8px">
+      <div class="head"><button class="back" type="button" data-back style="margin:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span class="with" id="with"></span></div>
+      <div style="padding-left:12px;display:flex;flex-direction:column;gap:12px"><p class="big" id="big"></p><div class="bar lg"><div data-pct></div></div></div>
     </div>
-    <div class="bottom"><button class="btn wide" id="finish" data-i18n="finish"></button></div>
+    <div class="view" style="padding-top:4px" id="shop-items"></div>
+    <div class="bottom solid"><button class="btn wide" id="finish" data-i18n="finish" style="height:58px;font-size:18px"></button></div>
   </div>
 
   <!-- history -->
-  <div id="history" hidden style="display:flex;flex-direction:column;flex:1">
-    <div class="view">
-      <h1 data-i18n="often"></h1>
-      <p class="sub" data-i18n="oftenHint"></p>
+  <div class="screen" id="history" hidden>
+    <div class="block"><h1 data-i18n="often"></h1><p data-i18n="oftenHint"></p></div>
+    <div class="view" style="padding-top:4px">
       <div id="hist-items"></div>
       <p class="empty" data-i18n="oftenEmpty" id="hist-empty" hidden></p>
+    </div>
+    <div class="bottom"><nav data-nav></nav></div>
+  </div>
+
+  <!-- appearance -->
+  <div class="screen" id="look" hidden>
+    <div class="block"><h1 data-i18n="look"></h1><p data-i18n="lookHint"></p></div>
+    <div class="view" style="padding-top:20px">
+      <div class="cards" id="pals" role="group" data-i18n-aria="look"></div>
+      <div class="preview" aria-hidden="true">
+        <span data-i18n="preview"></span>
+        <div class="p"><span class="check" style="background:var(--primary);border-color:var(--primary);color:var(--onprimary)"><svg width="16" height="16" viewBox="0 0 24 24" style="display:block" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="nm" style="flex:1;text-decoration:line-through;color:var(--muted);font-weight:400" data-i18n="sample1"></span><span class="who me">J</span></div>
+        <div class="p"><span class="check"></span><span class="nm" style="flex:1" data-i18n="sample2"></span><span class="who">K</span></div>
+      </div>
     </div>
     <div class="bottom"><nav data-nav></nav></div>
   </div>
@@ -218,6 +252,8 @@ const T = {
         last:r => `sist kjøpt ${r}`, today:'i dag',
         wrongCode:'Feil husstandskode', tooMany:'For mange forsøk, vent ett minutt', error:'Noe gikk galt',
         badName:'Sjekk navn, antall og notat (maks 100/20/200 tegn)', dup:'Er allerede på listen', addFail:'Kunne ikke legge til varen', added:n => `La til ${n}`,
+        look:'Utseende', lookHint:'Velg farger dere begge liker. Valget gjelder for dere begge.', preview:'Slik ser det ut', sample1:'Sitroner', sample2:'Havremelk',
+        pal:{ salvie:['Salvie','Dus grønn med myk rosa'], mynte:['Mynte','Frisk mynte med lavendel'], oliven:['Oliven','Oliven med smørgul'], skog:['Skog','Mørk, rolig kveldsmodus'] },
         cat:{ produce:'Frukt og grønt', dairy:'Meieri', pantry:'Tørrvarer', meat:'Kjøtt og fisk', frozen:'Frysevarer', household:'Husholdning', bakery:'Bakeri', '':'Annet' } },
   en: { welcome:'Welcome 🛒', yourName:'Your name', code:'Household code', join:'Join', title:'Our list',
         addItem:'Add an item', addBtn:'Add', addMore:'Add and new', clear:'Clear checked', logout:'Sign out', del:'Delete',
@@ -231,6 +267,8 @@ const T = {
         last:r => `last bought ${r}`, today:'today',
         wrongCode:'Wrong household code', tooMany:'Too many attempts, wait a minute', error:'Something went wrong',
         badName:'Check name, quantity and note (max 100/20/200 characters)', dup:'Already on the list', addFail:'Could not add item', added:n => `Added ${n}`,
+        look:'Appearance', lookHint:'Pick colours you both like. The choice applies to both of you.', preview:'Preview', sample1:'Lemons', sample2:'Oat milk',
+        pal:{ salvie:['Salvie','Dusty green with soft pink'], mynte:['Mynte','Fresh mint with lavender'], oliven:['Oliven','Olive with butter yellow'], skog:['Skog','Dark, calm evening mode'] },
         cat:{ produce:'Produce', dairy:'Dairy', pantry:'Pantry', meat:'Meat & fish', frozen:'Frozen', household:'Household', bakery:'Bakery', '':'Other' } },
 };
 let lang = document.documentElement.lang === 'en' ? 'en' : 'nb';
@@ -241,6 +279,7 @@ let me = '', items = [], history = [], others = [], addQty = 1, addCat = '', fla
 function h(tag, props = {}, ...kids) {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(props)) {
+    if (v == null) continue;
     if (k === 'class') e.className = v; else if (k.startsWith('on')) e[k] = v; else e.setAttribute(k, v);
   }
   e.append(...kids.flat().filter(x => x != null));
@@ -267,9 +306,10 @@ function setLang(l) {
   }
   for (const n of document.querySelectorAll('[data-nav]')) n.replaceChildren(
     navLink('#', 'list', t('navList'), '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>'),
-    navLink('#history', 'history', t('navOften'), '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'));
+    navLink('#history', 'history', t('navOften'), '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
+    navLink('#look', 'look', t('look'), '<path d="M12 3a9 9 0 100 18c1.4 0 2-.9 2-1.8 0-1.2-1-1.4-1-2.4 0-.9.7-1.3 1.6-1.3H17a4 4 0 004-4c0-4.4-4-8.5-9-8.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>'));
   for (const n of document.querySelectorAll('[data-nav]')) n.setAttribute('aria-label', t('navLabel'));
-  renderChips(); route();
+  renderChips(); renderPals(); route();
 }
 function navLink(href, view, label, icon) {
   return h('a', { href, 'aria-current': current() === view ? 'page' : null }, svg(icon), label);
@@ -285,26 +325,26 @@ async function api(path, method = 'GET', body) {
 }
 
 /* ---------- routing ---------- */
-const VIEWS = ['login', 'list', 'add', 'shop', 'history'];
+const VIEWS = ['login', 'list', 'add', 'shop', 'history', 'look'];
+const TABS = { list: 0, history: 1, look: 2 };
 function current() {
   if (!me) return 'login';
   const v = location.hash.slice(1);
-  return ['add', 'shop', 'history'].includes(v) ? v : 'list';
+  return ['add', 'shop', 'history', 'look'].includes(v) ? v : 'list';
 }
 let prev = null, tripTimer = null;
 function route() {
   const v = current();
   for (const id of VIEWS) $(id).hidden = id !== v;
-  document.body.classList.toggle('shop', v === 'shop');
-  document.querySelector('meta[name=theme-color]').content = v === 'shop' ? '#1F2A24' : '#FAF8F4';
+  syncThemeColor();
   if (v !== prev) {
     if (v === 'shop') startTrip(); else if (prev === 'shop') stopTrip();
     if (v === 'add') { addQty = 1; renderChips(); renderQty(); $('add-err').textContent = ''; setTimeout(() => $('name').focus(), 0); }
     if (v === 'history') loadHistory();
     prev = v; window.scrollTo(0, 0);
   }
-  for (const n of document.querySelectorAll('[data-nav] a')) n.toggleAttribute('aria-current', false);
-  for (const n of document.querySelectorAll('[data-nav]')) { const a = n.children[v === 'history' ? 1 : 0]; if (a && (v === 'list' || v === 'history')) a.setAttribute('aria-current', 'page'); }
+  for (const n of document.querySelectorAll('[data-nav] a')) n.removeAttribute('aria-current');
+  if (v in TABS) for (const n of document.querySelectorAll('[data-nav]')) n.children[TABS[v]]?.setAttribute('aria-current', 'page');
   render();
 }
 window.addEventListener('hashchange', route);
@@ -368,7 +408,7 @@ function renderHistory() {
         x.on_list ? h('span', { class:'onlist' }, svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 14, 3), t('onList'))
           : h('button', { class:'add', 'aria-label': t('addTo')(x.name), onclick: async () => {
               await api('items', 'POST', { name: x.name, qty: x.qty, category: x.category }); await Promise.all([refresh(), loadHistory()]); } },
-              (() => { const s = svg('<path d="M12 5v14M5 12h14"/>', 20, 2.4); s.setAttribute('stroke', '#fff'); return s; })()))))));
+              svg('<path d="M12 5v14M5 12h14"/>', 20, 2.4)))))));
 }
 async function loadHistory() { const r = await api('history'); if (r.ok) { history = await r.json(); if (current() === 'history') renderHistory(); } }
 
@@ -408,6 +448,26 @@ $('add-form').onsubmit = async e => {
   if (more) { $('add-err').style.color = 'var(--accent)'; $('add-err').textContent = t('added')(name); $('name').focus(); } else goBack();
 };
 
+/* ---------- appearance (palette is shared by the household) ---------- */
+const THEMES = ['salvie', 'mynte', 'oliven', 'skog'];
+const html = document.documentElement;
+function syncThemeColor() {
+  document.querySelector('meta[name=theme-color]').content = getComputedStyle(html).getPropertyValue('--block').trim();
+}
+function applyTheme(id) {
+  if (!THEMES.includes(id) || html.dataset.theme === id) return;
+  html.dataset.theme = id; syncThemeColor(); renderPals();
+}
+function renderPals() {
+  const cur = html.dataset.theme;
+  $('pals').replaceChildren(...THEMES.map(id => h('button', { type:'button', class:'pal', 'aria-pressed': id === cur,
+      onclick: async () => { applyTheme(id); const r = await api('settings', 'PUT', { theme: id }); if (!r.ok) loadSettings(); } },
+    h('span', { class:'sw', 'data-theme': id, 'aria-hidden': 'true' }, h('i', { class:'a' }), h('i', { class:'b' }), h('i', { class:'c' })),
+    h('span', { class:'t' }, h('b', {}, t('pal')[id][0]), h('span', {}, t('pal')[id][1])),
+    id === cur ? h('span', { class:'tick', 'aria-hidden':'true' }, CHECK()) : null)));
+}
+async function loadSettings() { const r = await api('settings'); if (r.ok) applyTheme((await r.json()).theme); }
+
 /* ---------- shopping trip ---------- */
 async function ping() { const r = await api('trip', 'POST'); if (r.ok) { others = await r.json(); render(); } }
 function startTrip() { ping(); tripTimer = setInterval(ping, 10000); }
@@ -415,7 +475,7 @@ function stopTrip() { clearInterval(tripTimer); others = []; api('trip', 'DELETE
 $('finish').onclick = async () => { await api('items/clear-done', 'POST'); await refresh(); goBack(); };
 
 /* ---------- session ---------- */
-async function refresh() { const r = await api('items'); if (r.ok) { items = await r.json(); render(); } }
+async function refresh() { loadSettings(); const r = await api('items'); if (r.ok) { items = await r.json(); render(); } }
 $('login-form').onsubmit = async e => {
   e.preventDefault();
   const r = await api('login', 'POST', { name: $('login-name').value, code: $('login-code').value });
