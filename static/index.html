@@ -38,6 +38,11 @@
   .lang button { min-width:44px; height:36px; border:0; border-radius:18px; background:transparent; color:var(--onblock); font-size:13px; font-weight:600; cursor:pointer; }
   .lang button[aria-pressed=true] { background:var(--primary); color:var(--onprimary); }
 
+  .seg { display:flex; padding:3px; border-radius:22px; background:var(--track); }
+  .seg button { flex:1; min-height:40px; padding:0 14px; border:0; border-radius:19px; background:transparent; color:var(--onblock); font-size:15px; font-weight:600; cursor:pointer; }
+  .seg button[aria-pressed=true] { background:var(--primary); color:var(--onprimary); }
+  .view .seg { background:var(--card); border:1.5px solid var(--edge); } .view .seg button { color:var(--ink); } .view .seg button[aria-pressed=true] { color:var(--onprimary); }
+  .units { margin:-12px 0 24px auto; width:max-content; } .units button { min-width:64px; min-height:44px; }
   .progress .row { display:flex; justify-content:space-between; gap:8px; font-size:14px; font-weight:500; color:var(--onblock-muted); }
   .bar { height:8px; border-radius:4px; background:var(--track); margin-top:8px; overflow:hidden; }
   .bar div { height:100%; border-radius:4px; background:var(--fill); width:0; transition:width .2s; }
@@ -154,6 +159,7 @@
   <div class="screen" id="list" hidden>
     <div class="block">
       <div class="head"><h1 data-i18n="title"></h1><div class="lang" role="group" aria-label="Språk / Language"></div></div>
+      <div class="seg" role="group" data-kinds data-i18n-aria="kindsLabel"></div>
       <div class="progress" data-progress><div class="row"><span data-left></span><span data-got></span></div><div class="bar"><div data-pct></div></div></div>
     </div>
     <div class="view">
@@ -166,7 +172,7 @@
       <div class="foot"><button class="link" id="clear" data-i18n="clear"></button><button class="link" id="logout" data-i18n="logout"></button></div>
     </div>
     <div class="bottom">
-      <div class="cta"><a class="btn wide" href="#shop" style="height:54px">
+      <div class="cta" id="cta"><a class="btn wide" href="#shop" style="height:54px">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6h15l-1.5 8H7z"/><path d="M5 6L4 3H2"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>
         <span data-i18n="start"></span></a></div>
       <nav data-nav></nav>
@@ -181,6 +187,7 @@
     </div>
     <div class="view" style="padding-top:20px">
       <form id="add-form" autocomplete="off">
+        <div class="seg" role="group" data-kinds data-i18n-aria="kindsLabel" style="margin-bottom:20px"></div>
         <div class="field">
           <label for="name" data-i18n="whatNeed"></label>
           <input type="text" id="name" maxlength="100" required>
@@ -192,7 +199,11 @@
             <output id="qty" aria-live="polite">1</output>
             <button type="button" id="more" data-i18n-aria="more"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
           </div></div>
-        <div class="field"><span class="lbl" id="catlabel" data-i18n="aisle"></span><div class="chips" id="chips" role="group" aria-labelledby="catlabel"></div></div>
+        <div class="seg units" id="units" role="group" data-i18n-aria="unit"></div>
+        <div class="field" id="aisle-field"><span class="lbl" id="catlabel" data-i18n="aisle"></span><div class="chips" id="chips" role="group" aria-labelledby="catlabel"></div></div>
+        <div class="field" id="tag-field" hidden><label for="tag" data-i18n="tag"></label>
+          <input type="text" id="tag" maxlength="30" data-i18n-ph="tagPh">
+          <div class="chips" id="tagchips" role="group" data-i18n-aria="tag"></div></div>
         <div class="field"><label for="note"><span data-i18n="note"></span> <span style="font-weight:400;color:var(--muted)" data-i18n="optional"></span></label>
           <input type="text" id="note" maxlength="200" data-i18n-ph="notePh"></div>
         <div class="err" id="add-err" role="alert"></div>
@@ -244,7 +255,7 @@ const T = {
         addItem:'Legg til vare', addBtn:'Legg til', addMore:'Legg til og ny', clear:'Fjern avkryssede', logout:'Logg ut', del:'Slett',
         empty:'Listen er tom. Legg til noe over.', start:'Start handletur', navList:'Liste', navOften:'Ofte kjøpt', navLabel:'Hovedmeny',
         whatNeed:'Hva trenger dere?', count:'Antall', fewer:'Færre', more:'Flere', aisle:'Avdeling', note:'Notat', optional:'(valgfritt)',
-        notePh:'Merke, størrelse, alt andre bør vite', back:'Tilbake',
+        notePh:'Størrelse, produsent, alt andre bør vite', back:'Tilbake',
         left:n => `${n} igjen`, got:(g,t) => `${g} av ${t} i kurven`, addedBy:n => `Lagt til av ${n}`,
         bigLeft:n => n === 0 ? 'Alt er handlet' : `${n} igjen å handle`, finish:'Ferdig med handelen', with:n => `${n} handler også`,
         often:'Ofte kjøpt', oftenHint:'Trykk på + for å legge noe tilbake på listen.', oftenEmpty:'Ingenting ennå. Varer du kjøper flere ganger dukker opp her.',
@@ -252,6 +263,9 @@ const T = {
         last:r => `sist kjøpt ${r}`, today:'i dag',
         wrongCode:'Feil husstandskode', tooMany:'For mange forsøk, vent ett minutt', error:'Noe gikk galt',
         badName:'Sjekk navn, antall og notat (maks 100/20/200 tegn)', dup:'Er allerede på listen', addFail:'Kunne ikke legge til varen', added:n => `La til ${n}`,
+        kinds:{ grocery:'Dagligvarer', other:'Annet' }, kindsLabel:'Type liste', unit:'Enhet', units:{ stk:'stk', kg:'kg', L:'L' },
+        tag:'Merke', tagPh:'F.eks. Gaver, Clas Ohlson', noTag:'Uten merke',
+        gotOther:(g,t) => `${g} av ${t} kjøpt`, emptyOther:'Ingenting annet å kjøpe. Legg til gaver, ting til huset og lignende.',
         look:'Utseende', lookHint:'Velg farger dere begge liker. Valget gjelder for dere begge.', preview:'Slik ser det ut', sample1:'Sitroner', sample2:'Havremelk',
         pal:{ salvie:['Salvie','Dus grønn med myk rosa'], mynte:['Mynte','Frisk mynte med lavendel'], oliven:['Oliven','Oliven med smørgul'], skog:['Skog','Mørk, rolig kveldsmodus'] },
         cat:{ produce:'Frukt og grønt', dairy:'Meieri', pantry:'Tørrvarer', meat:'Kjøtt og fisk', frozen:'Frysevarer', household:'Husholdning', bakery:'Bakeri', '':'Annet' } },
@@ -259,7 +273,7 @@ const T = {
         addItem:'Add an item', addBtn:'Add', addMore:'Add and new', clear:'Clear checked', logout:'Sign out', del:'Delete',
         empty:'The list is empty. Add something above.', start:'Start shopping', navList:'List', navOften:'Often bought', navLabel:'Main menu',
         whatNeed:'What do you need?', count:'Quantity', fewer:'Fewer', more:'More', aisle:'Aisle', note:'Note', optional:'(optional)',
-        notePh:'Brand, size, anything others should know', back:'Back',
+        notePh:'Size, brand, anything others should know', back:'Back',
         left:n => `${n} to get`, got:(g,t) => `${g} of ${t} in the basket`, addedBy:n => `Added by ${n}`,
         bigLeft:n => n === 0 ? 'Everything is bought' : `${n} left to buy`, finish:'Done shopping', with:n => `${n} is shopping too`,
         often:'Often bought', oftenHint:'Tap + to put something back on the list.', oftenEmpty:'Nothing yet. Items you buy more than once show up here.',
@@ -267,13 +281,17 @@ const T = {
         last:r => `last bought ${r}`, today:'today',
         wrongCode:'Wrong household code', tooMany:'Too many attempts, wait a minute', error:'Something went wrong',
         badName:'Check name, quantity and note (max 100/20/200 characters)', dup:'Already on the list', addFail:'Could not add item', added:n => `Added ${n}`,
+        kinds:{ grocery:'Groceries', other:'Other' }, kindsLabel:'List type', unit:'Unit', units:{ stk:'pcs', kg:'kg', L:'L' },
+        tag:'Tag', tagPh:'e.g. Gifts, Clas Ohlson', noTag:'No tag',
+        gotOther:(g,t) => `${g} of ${t} bought`, emptyOther:'Nothing else to buy. Add gifts, things for the house and the like.',
         look:'Appearance', lookHint:'Pick colours you both like. The choice applies to both of you.', preview:'Preview', sample1:'Lemons', sample2:'Oat milk',
         pal:{ salvie:['Salvie','Dusty green with soft pink'], mynte:['Mynte','Fresh mint with lavender'], oliven:['Oliven','Olive with butter yellow'], skog:['Skog','Dark, calm evening mode'] },
         cat:{ produce:'Produce', dairy:'Dairy', pantry:'Pantry', meat:'Meat & fish', frozen:'Frozen', household:'Household', bakery:'Bakery', '':'Other' } },
 };
 let lang = document.documentElement.lang === 'en' ? 'en' : 'nb';
 const t = k => T[lang][k];
-let me = '', items = [], history = [], others = [], addQty = 1, addCat = '', flash = '';
+let me = '', items = [], history = [], others = [], addQty = 1, addCat = '', addUnit = 'stk', addKind = 'grocery', tags = [];
+let listKind = localStorage.getItem('sl_kind') === 'other' ? 'other' : 'grocery';
 
 /* ---------- tiny DOM helper (text only, never innerHTML with data) ---------- */
 function h(tag, props = {}, ...kids) {
@@ -309,7 +327,7 @@ function setLang(l) {
     navLink('#history', 'history', t('navOften'), '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
     navLink('#look', 'look', t('look'), '<path d="M12 3a9 9 0 100 18c1.4 0 2-.9 2-1.8 0-1.2-1-1.4-1-2.4 0-.9.7-1.3 1.6-1.3H17a4 4 0 004-4c0-4.4-4-8.5-9-8.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>'));
   for (const n of document.querySelectorAll('[data-nav]')) n.setAttribute('aria-label', t('navLabel'));
-  renderChips(); renderPals(); route();
+  renderKinds(); renderUnits(); renderChips(); renderTags(); renderPals(); route();
 }
 function navLink(href, view, label, icon) {
   return h('a', { href, 'aria-current': current() === view ? 'page' : null }, svg(icon), label);
@@ -339,7 +357,7 @@ function route() {
   syncThemeColor();
   if (v !== prev) {
     if (v === 'shop') startTrip(); else if (prev === 'shop') stopTrip();
-    if (v === 'add') { addQty = 1; renderChips(); renderQty(); $('add-err').textContent = ''; setTimeout(() => $('name').focus(), 0); }
+    if (v === 'add') { addKind = listKind; addQty = 1; addUnit = 'stk'; renderKinds(); renderUnits(); renderQty(); renderChips(); loadTags(); showKindFields(); $('add-err').textContent = ''; setTimeout(() => $('name').focus(), 0); }
     if (v === 'history') loadHistory();
     prev = v; window.scrollTo(0, 0);
   }
@@ -352,28 +370,37 @@ const goBack = () => { location.hash = ''; };
 for (const b of document.querySelectorAll('[data-back]')) b.onclick = goBack;
 
 /* ---------- rendering ---------- */
-function sections(list) {
+const itemsOf = kind => items.filter(i => i.kind === kind);
+function sections(list, kind) {
+  const coll = new Intl.Collator(lang === 'nb' ? 'nb' : 'en');   // æ ø å sort last in Norwegian
+  const sort = v => v.sort((a, b) => (a.done - b.done) || coll.compare(a.name, b.name));
+  if (kind === 'other') {   // grouped by free-form tag; untagged last
+    const by = new Map();
+    for (const it of list) (by.get(it.tag) ?? by.set(it.tag, []).get(it.tag)).push(it);
+    return [...by].sort(([a], [b]) => (a === '') - (b === '') || coll.compare(a, b)).map(([k, v]) => [k || t('noTag'), sort(v)]);
+  }
   const by = new Map();
   for (const c of [...CATS, '']) by.set(c, []);
   for (const it of list) (by.get(it.category) ?? by.get('')).push(it);
-  const coll = new Intl.Collator(lang === 'nb' ? 'nb' : 'en');   // æ ø å sort last in Norwegian
-  return [...by].filter(([, v]) => v.length)
-    .map(([c, v]) => [c, v.sort((a, b) => (a.done - b.done) || coll.compare(a.name, b.name))]);
+  return [...by].filter(([, v]) => v.length).map(([c, v]) => [t('cat')[c], sort(v)]);
 }
+// "1.5 kg" is stored with a dot; show a decimal comma in Norwegian
+const fmtQty = q => lang === 'nb' ? q.replace(/(\d)\.(\d)/g, '$1,$2') : q;
 function itemRow(it, shop) {
   const check = h('span', { class:'check' }, CHECK());
   const who = h('span', { class:'who' + (it.added_by === me ? ' me' : ''), 'aria-label': t('addedBy')(it.added_by), title: t('addedBy')(it.added_by) }, [...it.added_by][0]?.toUpperCase() ?? '');
   const tg = h('button', { class:'toggle', 'aria-pressed': it.done, onclick: async () => { await api('items/' + it.id, 'PATCH', { done: !it.done }); refresh(); } },
     check, h('span', { class:'txt' }, h('span', { class:'nm' }, it.name), it.note ? h('span', { class:'note' }, it.note) : null),
-    it.qty ? h('span', { class:'qty' }, it.qty) : null, who);
+    it.qty ? h('span', { class:'qty' }, fmtQty(it.qty)) : null, who);
   const del = h('button', { class:'del', 'aria-label': t('del') + ' ' + it.name, onclick: async () => { await api('items/' + it.id, 'DELETE'); refresh(); } }, '✕');
   return h('div', { class:'row-item' + (it.done ? ' done' : '') }, tg, del);
 }
 function progress() {
-  const got = items.filter(i => i.done).length, n = items.length;
+  const kind = current() === 'shop' ? 'grocery' : listKind, list = itemsOf(kind);
+  const got = list.filter(i => i.done).length, n = list.length;
   for (const p of document.querySelectorAll('[data-pct]')) p.style.width = (n ? Math.round(got / n * 100) : 0) + '%';
   for (const e of document.querySelectorAll('[data-left]')) e.textContent = t('left')(n - got);
-  for (const e of document.querySelectorAll('[data-got]')) e.textContent = t('got')(got, n);
+  for (const e of document.querySelectorAll('[data-got]')) e.textContent = t(kind === 'other' ? 'gotOther' : 'got')(got, n);
   document.querySelector('[data-progress]').hidden = n === 0;
   $('big').textContent = t('bigLeft')(n - got);
 }
@@ -381,10 +408,13 @@ function render() {
   const v = current();
   progress();
   if (v === 'list' || v === 'shop') {
+    const kind = v === 'shop' ? 'grocery' : listKind, list = itemsOf(kind);
     const target = v === 'list' ? $('list-items') : $('shop-items');
-    target.replaceChildren(...sections(items).map(([c, its]) =>
-      h('section', { class:'aisle' }, h('h2', {}, t('cat')[c]), its.map(it => itemRow(it, v === 'shop')))));
-    $('list-empty').hidden = items.length > 0;
+    target.replaceChildren(...sections(list, kind).map(([title, its]) =>
+      h('section', { class:'aisle' }, h('h2', {}, title), its.map(it => itemRow(it, v === 'shop')))));
+    $('list-empty').hidden = list.length > 0;
+    $('list-empty').textContent = t(kind === 'other' ? 'emptyOther' : 'empty');
+    $('cta').hidden = kind === 'other';
   }
   if (v === 'shop') $('with').textContent = others.length ? t('with')(others.join(', ')) : '';
   if (v === 'history') renderHistory();
@@ -417,16 +447,41 @@ function renderChips() {
   $('chips').replaceChildren(...CATS.slice(0, 6).concat('bakery').map(c =>
     h('button', { type:'button', 'aria-pressed': addCat === c, onclick: () => { addCat = addCat === c ? '' : c; renderChips(); } }, t('cat')[c])));
 }
-function renderQty() { $('qty').textContent = addQty; }
-$('less').onclick = () => { addQty = Math.max(1, addQty - 1); renderQty(); };
-$('more').onclick = () => { addQty = Math.min(99, addQty + 1); renderQty(); };
+function renderKinds() {
+  for (const box of document.querySelectorAll('[data-kinds]')) {
+    const inAdd = $('add').contains(box), cur = inAdd ? addKind : listKind;
+    box.replaceChildren(...['grocery', 'other'].map(k => h('button', { type:'button', 'aria-pressed': k === cur, onclick: () => {
+      if (inAdd) { addKind = k; showKindFields(); } else { listKind = k; localStorage.setItem('sl_kind', k); }
+      renderKinds(); render(); } }, t('kinds')[k])));
+  }
+}
+function showKindFields() {
+  $('aisle-field').hidden = addKind !== 'grocery'; $('tag-field').hidden = addKind !== 'other'; $('sugg').hidden = true;
+}
+const UNIT = { stk:{ step:1, min:1 }, kg:{ step:0.5, min:0.5 }, L:{ step:0.5, min:0.5 } };
+function renderUnits() {
+  $('units').replaceChildren(...Object.keys(UNIT).map(u => h('button', { type:'button', 'aria-pressed': u === addUnit, onclick: () => {
+    addUnit = u; addQty = Math.max(1, UNIT[u].min); renderUnits(); renderQty(); } }, t('units')[u])));
+}
+const num = n => lang === 'nb' ? String(n).replace('.', ',') : String(n);
+function renderQty() { $('qty').textContent = num(addQty) + (addUnit === 'stk' ? '' : ' ' + addUnit); }
+const qtyString = () => addUnit === 'stk' ? (addQty > 1 ? String(addQty) : '') : `${addQty} ${addUnit}`;
+$('less').onclick = () => { addQty = Math.max(UNIT[addUnit].min, addQty - UNIT[addUnit].step); renderQty(); };
+$('more').onclick = () => { addQty = Math.min(99, addQty + UNIT[addUnit].step); renderQty(); };
+async function loadTags() { const r = await api('tags'); if (r.ok) { tags = await r.json(); renderTags(); } }
+function renderTags() {
+  const cur = $('tag').value.trim().toLowerCase();
+  $('tagchips').replaceChildren(...tags.map(x => h('button', { type:'button', 'aria-pressed': x.toLowerCase() === cur,
+    onclick: () => { $('tag').value = $('tag').value.trim() === x ? '' : x; renderTags(); } }, x)));
+}
+$('tag').oninput = renderTags;
 $('go-add').onclick = () => { location.hash = 'add'; };
 
 let suggTimer;
 $('name').oninput = () => {
   clearTimeout(suggTimer);
   const q = $('name').value.trim();
-  if (!q) return void ($('sugg').hidden = true);
+  if (!q || addKind !== 'grocery') return void ($('sugg').hidden = true);
   suggTimer = setTimeout(async () => {
     const r = await api('suggest?q=' + encodeURIComponent(q));
     if (!r.ok || $('name').value.trim() !== q) return;
@@ -441,11 +496,12 @@ $('add-form').onsubmit = async e => {
   e.preventDefault();
   const more = e.submitter?.value === 'more';
   const name = $('name').value.trim();
-  const r = await api('items', 'POST', { name, qty: addQty > 1 ? String(addQty) : '', category: addCat, note: $('note').value });
+  const r = await api('items', 'POST', { name, qty: qtyString(), kind: addKind, category: addKind === 'grocery' ? addCat : '', tag: addKind === 'other' ? $('tag').value : '', note: $('note').value });
   if (!r.ok) { $('add-err').style.color = ''; $('add-err').textContent = r.status === 409 ? t('dup') : r.status === 400 ? t('badName') : t('addFail'); return; }
-  $('name').value = $('note').value = ''; $('sugg').hidden = true; addQty = 1; addCat = ''; renderChips(); renderQty();
+  $('name').value = $('note').value = ''; $('sugg').hidden = true; addQty = 1; addUnit = 'stk'; addCat = ''; renderChips(); renderUnits(); renderQty(); loadTags();
+  listKind = addKind; localStorage.setItem('sl_kind', listKind);
   await refresh();
-  if (more) { $('add-err').style.color = 'var(--accent)'; $('add-err').textContent = t('added')(name); $('name').focus(); } else goBack();
+  if (more) { $('add-err').style.color = 'var(--primary)'; $('add-err').textContent = t('added')(name); $('name').focus(); } else goBack();
 };
 
 /* ---------- appearance (palette is shared by the household) ---------- */
@@ -472,7 +528,7 @@ async function loadSettings() { const r = await api('settings'); if (r.ok) apply
 async function ping() { const r = await api('trip', 'POST'); if (r.ok) { others = await r.json(); render(); } }
 function startTrip() { ping(); tripTimer = setInterval(ping, 10000); }
 function stopTrip() { clearInterval(tripTimer); others = []; api('trip', 'DELETE'); }
-$('finish').onclick = async () => { await api('items/clear-done', 'POST'); await refresh(); goBack(); };
+$('finish').onclick = async () => { await api('items/clear-done?kind=grocery', 'POST'); await refresh(); goBack(); };
 
 /* ---------- session ---------- */
 async function refresh() { loadSettings(); const r = await api('items'); if (r.ok) { items = await r.json(); render(); } }
@@ -482,7 +538,7 @@ $('login-form').onsubmit = async e => {
   if (r.ok) { me = (await r.json()).name; $('login-err').textContent = ''; $('login-code').value = ''; route(); refresh(); }
   else $('login-err').textContent = r.status === 403 ? t('wrongCode') : r.status === 429 ? t('tooMany') : t('error');
 };
-$('clear').onclick = async () => { await api('items/clear-done', 'POST'); refresh(); };
+$('clear').onclick = async () => { await api('items/clear-done?kind=' + listKind, 'POST'); refresh(); };
 $('logout').onclick = async () => { stopTrip(); await api('logout', 'POST'); me = ''; items = []; history = []; location.hash = ''; prev = null; route(); };
 
 setLang(lang);

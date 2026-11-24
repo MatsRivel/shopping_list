@@ -16,6 +16,8 @@ const INDEX_HTML: &str = include_str!("../static/index.html");
 const COOKIE: &str = "sl_session";
 
 const SESSION_TTL_SECS: i64 = 31_536_000;
+/// Item kinds: groceries are the main list; "other" (gifts, hardware...) is tagged freely.
+const KINDS: [&str; 2] = ["grocery", "other"];
 const THEMES: [&str; 4] = ["salvie", "mynte", "oliven", "skog"];
 const DEFAULT_THEME: &str = "salvie";
 const TRIP_TTL: Duration = Duration::from_secs(30);
@@ -64,6 +66,9 @@ fn init_db(path: &str) -> Connection {
             category TEXT NOT NULL DEFAULT '', qty TEXT NOT NULL DEFAULT '',
             bought_at INTEGER NOT NULL DEFAULT (unixepoch()));
          CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
+         CREATE TABLE IF NOT EXISTS tags(
+            name_key TEXT PRIMARY KEY, name TEXT NOT NULL,
+            used_at INTEGER NOT NULL DEFAULT (unixepoch()));
          CREATE INDEX IF NOT EXISTS purchases_key ON purchases(name_key);
          CREATE INDEX IF NOT EXISTS purchases_item ON purchases(item_id);",
     )
@@ -73,6 +78,8 @@ fn init_db(path: &str) -> Connection {
         ("qty", "ALTER TABLE items ADD COLUMN qty TEXT NOT NULL DEFAULT ''"),
         ("category", "ALTER TABLE items ADD COLUMN category TEXT NOT NULL DEFAULT ''"),
         ("note", "ALTER TABLE items ADD COLUMN note TEXT NOT NULL DEFAULT ''"),
+        ("kind", "ALTER TABLE items ADD COLUMN kind TEXT NOT NULL DEFAULT 'grocery'"),
+        ("tag", "ALTER TABLE items ADD COLUMN tag TEXT NOT NULL DEFAULT ''"),
     ] {
         let has: bool = db
             .query_row("SELECT count(*) > 0 FROM pragma_table_info('items') WHERE name=?1", [col], |r| r.get(0))
@@ -178,12 +185,14 @@ struct Item {
     qty: String,
     category: String,
     note: String,
+    kind: String,
+    tag: String,
 }
 
 async fn list(_: User, State(app): State<App>) -> Result<Json<Vec<Item>>, StatusCode> {
     let db = db(&app);
     let mut st = db
-        .prepare("SELECT id,name,done,added_by,qty,category,note FROM items ORDER BY done, id DESC")
+        .prepare("SELECT id,name,done,added_by,qty,category,note,kind,tag FROM items ORDER BY done, id DESC")
         .map_err(internal)?;
     let items = st
         .query_map([], |r| {
@@ -195,6 +204,8 @@ async fn list(_: User, State(app): State<App>) -> Result<Json<Vec<Item>>, Status
                 qty: r.get(4)?,
                 category: r.get(5)?,
                 note: r.get(6)?,
+                kind: r.get(7)?,
+                tag: r.get(8)?,
             })
         })
         .map_err(internal)?
@@ -212,35 +223,72 @@ struct NewItem {
     category: String,
     #[serde(default)]
     note: String,
+    #[serde(default = "default_kind")]
+    kind: String,
+    #[serde(default)]
+    tag: String,
+}
+
+fn default_kind() -> String {
+    "grocery".into()
 }
 
 async fn add(User(who): User, State(app): State<App>, Json(n): Json<NewItem>) -> StatusCode {
     let (name, qty, note) = (n.name.trim(), n.qty.trim(), n.note.trim());
+    let tag = n.tag.split_whitespace().collect::<Vec<_>>().join(" ");
     if name.is_empty()
         || name.chars().count() > 100
         || qty.chars().count() > 20
         || note.chars().count() > 200
+        || tag.chars().count() > 30
+        || !KINDS.contains(&n.kind.as_str())
         || !CATEGORIES.contains(&n.category.as_str())
     {
         return StatusCode::BAD_REQUEST;
     }
+    // Groceries are sorted by aisle, everything else by free-form tag (a store, "gifts", ...).
+    let (category, tag) = if n.kind == "grocery" { (n.category.as_str(), String::new()) } else { ("", tag) };
     let db = db(&app);
     let k = key(name);
     let dup = db
-        .prepare("SELECT name FROM items WHERE done=0")
-        .and_then(|mut st| st.query_map([], |r| r.get::<_, String>(0))?.collect::<Result<Vec<_>, _>>());
+        .prepare("SELECT name FROM items WHERE done=0 AND kind=?1")
+        .and_then(|mut st| st.query_map([&n.kind], |r| r.get::<_, String>(0))?.collect::<Result<Vec<_>, _>>());
     match dup {
         Ok(names) if names.iter().any(|x| key(x) == k) => return StatusCode::CONFLICT,
         Ok(_) => {}
         Err(e) => return internal(e),
     }
-    match db.execute(
-        "INSERT INTO items(name,added_by,qty,category,note) VALUES(?1,?2,?3,?4,?5)",
-        params![name, who, qty, n.category, note],
-    ) {
+    let res = db
+        .execute(
+            "INSERT INTO items(name,added_by,qty,category,note,kind,tag) VALUES(?1,?2,?3,?4,?5,?6,?7)",
+            params![name, who, qty, category, note, n.kind, tag],
+        )
+        .and_then(|_| {
+            if tag.is_empty() {
+                return Ok(0);
+            }
+            db.execute(
+                "INSERT INTO tags(name_key,name) VALUES(?1,?2)
+                 ON CONFLICT(name_key) DO UPDATE SET name=excluded.name, used_at=unixepoch()",
+                params![key(&tag), tag],
+            )
+        });
+    match res {
         Ok(_) => StatusCode::CREATED,
         Err(e) => internal(e),
     }
+}
+
+/// Recently used tags for non-grocery items, newest first.
+async fn list_tags(_: User, State(app): State<App>) -> Result<Json<Vec<String>>, StatusCode> {
+    let db = db(&app);
+    let mut st = db.prepare("SELECT name FROM tags ORDER BY used_at DESC, rowid DESC LIMIT 12").map_err(internal)?;
+    let tags = st
+        .query_map([], |r| r.get::<_, String>(0))
+        .map_err(internal)?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(internal)?;
+    Ok(Json(tags))
 }
 
 #[derive(Deserialize)]
@@ -259,17 +307,19 @@ fn affected(r: rusqlite::Result<usize>) -> StatusCode {
 /// Checking an item off records a purchase (feeds "often bought"); unchecking undoes it.
 async fn set_done(_: User, State(app): State<App>, Path(id): Path<i64>, Json(t): Json<Toggle>) -> StatusCode {
     let db = db(&app);
-    let row = db.query_row("SELECT name,category,qty,done FROM items WHERE id=?1", [id], |r| {
-        Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, bool>(3)?))
+    let row = db.query_row("SELECT name,category,qty,done,kind FROM items WHERE id=?1", [id], |r| {
+        Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, bool>(3)?, r.get::<_, String>(4)?))
     });
-    let (name, category, qty, was_done) = match row {
+    let (name, category, qty, was_done, kind) = match row {
         Ok(v) => v,
         Err(rusqlite::Error::QueryReturnedNoRows) => return StatusCode::NOT_FOUND,
         Err(e) => return internal(e),
     };
     let res = (|| -> rusqlite::Result<()> {
         db.execute("UPDATE items SET done=?1 WHERE id=?2", params![t.done, id])?;
-        if t.done && !was_done {
+        if kind != "grocery" {
+            // only groceries feed "often bought"
+        } else if t.done && !was_done {
             db.execute(
                 "INSERT INTO purchases(item_id,name_key,name,category,qty) VALUES(?1,?2,?3,?4,?5)",
                 params![id, key(&name), name, category, qty],
@@ -289,8 +339,19 @@ async fn remove(_: User, State(app): State<App>, Path(id): Path<i64>) -> StatusC
     affected(db(&app).execute("DELETE FROM items WHERE id=?1", [id]))
 }
 
-async fn clear_done(_: User, State(app): State<App>) -> StatusCode {
-    match db(&app).execute("DELETE FROM items WHERE done=1", []) {
+#[derive(Deserialize)]
+struct ClearQuery {
+    kind: Option<String>,
+}
+
+/// Remove checked-off items, optionally only of one kind (the shopping trip only clears groceries).
+async fn clear_done(_: User, State(app): State<App>, Query(q): Query<ClearQuery>) -> StatusCode {
+    let res = match q.kind.as_deref() {
+        None => db(&app).execute("DELETE FROM items WHERE done=1", []),
+        Some(k) if KINDS.contains(&k) => db(&app).execute("DELETE FROM items WHERE done=1 AND kind=?1", [k]),
+        Some(_) => return StatusCode::BAD_REQUEST,
+    };
+    match res {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => internal(e),
     }
@@ -508,6 +569,7 @@ fn router(app: App) -> Router {
         .route("/api/items/{id}", patch(set_done).delete(remove))
         .route("/api/items/clear-done", post(clear_done))
         .route("/api/settings", get(get_settings).put(put_settings))
+        .route("/api/tags", get(list_tags))
         .route("/api/history", get(history))
         .route("/api/suggest", get(suggest))
         .route("/api/trip", post(trip_ping).delete(trip_end))
@@ -599,6 +661,41 @@ mod tests {
         assert_eq!(items[0]["qty"], "2");
         assert_eq!(items[0]["added_by"], "Jonas");
         assert_eq!(call(&app, "PATCH", "/api/items/999", Some(&c), Some(r#"{"done":true}"#)).await.0, StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn other_items_are_tagged_and_kept_out_of_history() {
+        let app = test_app();
+        let c = login_as(&app, "J").await;
+        let post = |b: &'static str| call(&app, "POST", "/api/items", Some(&c), Some(b));
+        assert_eq!(post(r#"{"name":"Lego","kind":"other","tag":"  Gaver  til Ola ","category":"dairy","qty":"1 stk"}"#).await.0, StatusCode::CREATED);
+        // Same name is fine as a grocery, a duplicate within "other" is not.
+        assert_eq!(post(r#"{"name":"lego","kind":"other"}"#).await.0, StatusCode::CONFLICT);
+        assert_eq!(post(r#"{"name":"Lego"}"#).await.0, StatusCode::CREATED);
+        assert_eq!(post(r#"{"name":"X","kind":"weapons"}"#).await.0, StatusCode::BAD_REQUEST);
+        assert_eq!(post(r#"{"name":"X","kind":"other","tag":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).await.0, StatusCode::BAD_REQUEST);
+        let (_, _, body) = call(&app, "GET", "/api/items", Some(&c), None).await;
+        let items: serde_json::Value = serde_json::from_str(&body).unwrap();
+        let other = items.as_array().unwrap().iter().find(|i| i["kind"] == "other").unwrap();
+        assert_eq!(other["tag"], "Gaver til Ola");
+        assert_eq!(other["category"], "", "aisle is ignored for non-groceries");
+        assert_eq!(call(&app, "GET", "/api/tags", Some(&c), None).await.2, r#"["Gaver til Ola"]"#);
+        // Buying it twice never makes it an "often bought" grocery.
+        let id = other["id"].as_i64().unwrap();
+        for done in ["true", "false", "true"] {
+            call(&app, "PATCH", &format!("/api/items/{id}"), Some(&c), Some(&format!(r#"{{"done":{done}}}"#))).await;
+        }
+        assert_eq!(call(&app, "GET", "/api/history", Some(&c), None).await.2, "[]");
+        // Clearing groceries leaves the checked "other" item alone.
+        let (_, _, body) = call(&app, "GET", "/api/items", Some(&c), None).await;
+        let g = serde_json::from_str::<serde_json::Value>(&body).unwrap().as_array().unwrap().iter().find(|i| i["kind"] == "grocery").unwrap()["id"].as_i64().unwrap();
+        call(&app, "PATCH", &format!("/api/items/{g}"), Some(&c), Some(r#"{"done":true}"#)).await;
+        assert_eq!(call(&app, "POST", "/api/items/clear-done?kind=grocery", Some(&c), None).await.0, StatusCode::NO_CONTENT);
+        let (_, _, body) = call(&app, "GET", "/api/items", Some(&c), None).await;
+        let left: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(left.as_array().unwrap().len(), 1);
+        assert_eq!(left[0]["kind"], "other");
+        assert_eq!(call(&app, "POST", "/api/items/clear-done?kind=bogus", Some(&c), None).await.0, StatusCode::BAD_REQUEST);
     }
 
     #[tokio::test]
