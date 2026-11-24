@@ -94,7 +94,7 @@
   .stepper { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
   .stepper .ctl { display:flex; align-items:center; gap:4px; }
   .stepper button { width:48px; height:48px; border-radius:24px; border:1.5px solid var(--edge); background:var(--card); display:flex; align-items:center; justify-content:center; color:var(--ink); cursor:pointer; }
-  .stepper output { min-width:48px; text-align:center; font-size:22px; font-weight:600; }
+  .stepper input { width:84px; height:48px; padding:0 8px; text-align:center; font-size:22px; font-weight:600; border-radius:24px; }
   .chips { display:flex; flex-wrap:wrap; gap:8px; }
   .chips button { height:44px; padding:0 18px; border-radius:22px; border:1.5px solid var(--edge); background:var(--card); font-size:15px; color:var(--ink); cursor:pointer; }
   .chips button[aria-pressed=true] { background:var(--primary); border-color:var(--primary); color:var(--onprimary); font-weight:600; }
@@ -196,7 +196,7 @@
         <div class="stepper"><span class="lbl" id="qtylabel" data-i18n="count"></span>
           <div class="ctl" role="group" aria-labelledby="qtylabel">
             <button type="button" id="less" data-i18n-aria="fewer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
-            <output id="qty" aria-live="polite">1</output>
+            <input type="text" id="qty" inputmode="decimal" autocomplete="off" value="1" data-i18n-aria="count">
             <button type="button" id="more" data-i18n-aria="more"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
           </div></div>
         <div class="seg units" id="units" role="group" data-i18n-aria="unit"></div>
@@ -262,7 +262,7 @@ const T = {
         weekly:'Omtrent hver uke', sometimes:'Av og til', onList:'På listen', addTo:n => `Legg til ${n} på listen`,
         last:r => `sist kjøpt ${r}`, today:'i dag',
         wrongCode:'Feil husstandskode', tooMany:'For mange forsøk, vent ett minutt', error:'Noe gikk galt',
-        badName:'Sjekk navn, antall og notat (maks 100/20/200 tegn)', dup:'Er allerede på listen', addFail:'Kunne ikke legge til varen', added:n => `La til ${n}`,
+        badQty:'Skriv inn et antall større enn 0', badName:'Sjekk navn, antall og notat (maks 100/20/200 tegn)', dup:'Er allerede på listen', addFail:'Kunne ikke legge til varen', added:n => `La til ${n}`,
         kinds:{ grocery:'Dagligvarer', other:'Annet' }, kindsLabel:'Type liste', unit:'Enhet', units:{ stk:'stk', kg:'kg', L:'L' },
         tag:'Merke', tagPh:'F.eks. Gaver, Clas Ohlson', noTag:'Uten merke',
         gotOther:(g,t) => `${g} av ${t} kjøpt`, emptyOther:'Ingenting annet å kjøpe. Legg til gaver, ting til huset og lignende.',
@@ -280,7 +280,7 @@ const T = {
         weekly:'About every week', sometimes:'Occasionally', onList:'On the list', addTo:n => `Add ${n} to the list`,
         last:r => `last bought ${r}`, today:'today',
         wrongCode:'Wrong household code', tooMany:'Too many attempts, wait a minute', error:'Something went wrong',
-        badName:'Check name, quantity and note (max 100/20/200 characters)', dup:'Already on the list', addFail:'Could not add item', added:n => `Added ${n}`,
+        badQty:'Enter an amount greater than 0', badName:'Check name, quantity and note (max 100/20/200 characters)', dup:'Already on the list', addFail:'Could not add item', added:n => `Added ${n}`,
         kinds:{ grocery:'Groceries', other:'Other' }, kindsLabel:'List type', unit:'Unit', units:{ stk:'pcs', kg:'kg', L:'L' },
         tag:'Tag', tagPh:'e.g. Gifts, Clas Ohlson', noTag:'No tag',
         gotOther:(g,t) => `${g} of ${t} bought`, emptyOther:'Nothing else to buy. Add gifts, things for the house and the like.',
@@ -461,13 +461,26 @@ function showKindFields() {
 const UNIT = { stk:{ step:1, min:1 }, kg:{ step:0.5, min:0.5 }, L:{ step:0.5, min:0.5 } };
 function renderUnits() {
   $('units').replaceChildren(...Object.keys(UNIT).map(u => h('button', { type:'button', 'aria-pressed': u === addUnit, onclick: () => {
-    addUnit = u; addQty = Math.max(1, UNIT[u].min); renderUnits(); renderQty(); } }, t('units')[u])));
+    addUnit = u; addQty = readQty() ?? addQty; renderUnits(); renderQty(); } }, t('units')[u])));
 }
 const num = n => lang === 'nb' ? String(n).replace('.', ',') : String(n);
-function renderQty() { $('qty').textContent = num(addQty) + (addUnit === 'stk' ? '' : ' ' + addUnit); }
-const qtyString = () => addUnit === 'stk' ? (addQty > 1 ? String(addQty) : '') : `${addQty} ${addUnit}`;
-$('less').onclick = () => { addQty = Math.max(UNIT[addUnit].min, addQty - UNIT[addUnit].step); renderQty(); };
-$('more').onclick = () => { addQty = Math.min(99, addQty + UNIT[addUnit].step); renderQty(); };
+function renderQty() { $('qty').value = num(addQty); }
+// Free-form amount ("1,75" or "1.75", "100"): returns null when it isn't a usable number.
+function readQty() {
+  const n = Number($('qty').value.trim().replace(',', '.'));
+  return Number.isFinite(n) && n > 0 && n <= 9999 ? Math.round(n * 1000) / 1000 : null;
+}
+const qtyString = () => addUnit === 'stk' ? (addQty !== 1 ? String(addQty) : '') : `${addQty} ${addUnit}`;
+function stepQty(dir) {
+  const n = readQty() ?? addQty, { step, min } = UNIT[addUnit];
+  addQty = dir < 0 ? (n > min ? Math.max(min, n - step) : n) : Math.min(9999, n + step);
+  addQty = Math.round(addQty * 1000) / 1000; renderQty();
+}
+$('less').onclick = () => stepQty(-1);
+$('more').onclick = () => stepQty(1);
+$('qty').oninput = () => { const n = readQty(); if (n != null) addQty = n; };
+$('qty').onblur = renderQty;   // snap back to the last valid amount
+$('qty').onfocus = () => $('qty').select();
 async function loadTags() { const r = await api('tags'); if (r.ok) { tags = await r.json(); renderTags(); } }
 function renderTags() {
   const cur = $('tag').value.trim().toLowerCase();
@@ -495,6 +508,9 @@ $('name').oninput = () => {
 $('add-form').onsubmit = async e => {
   e.preventDefault();
   const more = e.submitter?.value === 'more';
+  const q = readQty();
+  if (q == null) { $('add-err').style.color = ''; $('add-err').textContent = t('badQty'); $('qty').focus(); return; }
+  addQty = q;
   const name = $('name').value.trim();
   const r = await api('items', 'POST', { name, qty: qtyString(), kind: addKind, category: addKind === 'grocery' ? addCat : '', tag: addKind === 'other' ? $('tag').value : '', note: $('note').value });
   if (!r.ok) { $('add-err').style.color = ''; $('add-err').textContent = r.status === 409 ? t('dup') : r.status === 400 ? t('badName') : t('addFail'); return; }
