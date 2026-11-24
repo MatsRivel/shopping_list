@@ -8,4 +8,4 @@ resources:
 images:
   - name: shopping-list
     newName: ghcr.io/matsrivel/shopping_list
-    newTag: bfa83cef80d7ec70e33a9107482c432ebe44e3e0
+    newTag: a16d4efa1c2cbbfa5324ffbce922a061fb64bda2
