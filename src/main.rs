@@ -21,7 +21,9 @@ const KINDS: [&str; 2] = ["grocery", "other"];
 /// Max tags on one item, and max length of one tag.
 const MAX_TAGS: usize = 5;
 const MAX_TAG_LEN: usize = 30;
-const THEMES: [&str; 4] = ["salvie", "mynte", "oliven", "skog"];
+const THEMES: [&str; 11] = [
+    "salvie", "mynte", "oliven", "skog", "maroon", "orken", "gruvbox", "brunost", "fjord", "midnatt", "synthwave",
+];
 const DEFAULT_THEME: &str = "salvie";
 const TRIP_TTL: Duration = Duration::from_secs(30);
 /// Aisle ids the UI knows about; "" means unsorted.
@@ -772,6 +774,15 @@ mod tests {
         let app = test_app();
         assert!(call(&app, "GET", "/", None, None).await.2.contains(r#"<html lang="nb" data-theme="salvie">"#));
         assert!(call(&app, "GET", "/", Some("sl_lang=en"), None).await.2.contains(r#"<html lang="en" data-theme="salvie">"#));
+    }
+
+    #[test]
+    fn every_theme_has_css_and_a_label() {
+        for t in THEMES {
+            assert!(INDEX_HTML.contains(&format!("[data-theme=\"{t}\"]")), "no CSS for theme {t}");
+            assert!(INDEX_HTML.contains(&format!("{t}:['")), "no label for theme {t}");
+        }
+        assert!(INDEX_HTML.contains(&format!("const THEMES = [{}]", THEMES.map(|t| format!("'{t}'")).join(", "))));
     }
 
     #[tokio::test]

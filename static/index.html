@@ -13,7 +13,15 @@
   [data-theme="mynte"]  { --bg:#EFF8F5; --card:#FFFFFF; --block:#B9E2D5; --onblock:#123B35; --onblock-muted:#2F5A52; --ink:#14302B; --muted:#4D6762; --edge:#6B968A; --line:#D3E8E1; --primary:#1F6F63; --onprimary:#FFFFFF; --partner:#DACDF2; --onpartner:#2E2150; --track:#9ACDBD; --fill:#123B35; }
   [data-theme="oliven"] { --bg:#F6F6E8; --card:#FFFEF8; --block:#D6D9A3; --onblock:#2F3416; --onblock-muted:#4C5226; --ink:#2B2E16; --muted:#5E6240; --edge:#8C8F60; --line:#E4E5C8; --primary:#55602B; --onprimary:#FFFFFF; --partner:#F2D58B; --onpartner:#4A3708; --track:#BCC084; --fill:#2F3416; }
   [data-theme="skog"]   { --bg:#16231C; --card:#1F3027; --block:#24392E; --onblock:#E6F0E4; --onblock-muted:#B7CBBB; --ink:#E6F0E4; --muted:#AFC2B4; --edge:#5F7D6B; --line:#2E4337; --primary:#8FD1AE; --onprimary:#12261C; --partner:#E8BBA9; --onpartner:#3B1D12; --track:#3A5546; --fill:#8FD1AE; }
-  :root { color-scheme: light; } [data-theme="skog"] { color-scheme: dark; }
+  [data-theme="maroon"] { --bg:#FAF2F2; --card:#FFFFFF; --block:#E8C6CB; --onblock:#4A1220; --onblock-muted:#6E2C38; --ink:#2A1418; --muted:#6A4A50; --edge:#A57A82; --line:#EEDADC; --primary:#7A1F2B; --onprimary:#FFFFFF; --partner:#F0C7A8; --onpartner:#4A2410; --track:#D3A2AA; --fill:#5A1522; }
+  [data-theme="orken"] { --bg:#F8F0E3; --card:#FFFCF6; --block:#EBCFA3; --onblock:#4A2E12; --onblock-muted:#6E4A22; --ink:#33261A; --muted:#6F5A44; --edge:#9D8663; --line:#EADDC6; --primary:#A9462A; --onprimary:#FFFFFF; --partner:#BFD6C8; --onpartner:#1F3A2E; --track:#D9B87F; --fill:#4A2E12; }
+  [data-theme="gruvbox"] { --bg:#282828; --card:#32302F; --block:#3C3836; --onblock:#EBDBB2; --onblock-muted:#BDAE93; --ink:#EBDBB2; --muted:#BDAE93; --edge:#84786D; --line:#504945; --primary:#FABD2F; --onprimary:#282828; --partner:#8EC07C; --onpartner:#282828; --track:#504945; --fill:#FABD2F; }
+  [data-theme="brunost"] { --bg:#F7EDDD; --card:#FFFAF0; --block:#D9A66B; --onblock:#3B2208; --onblock-muted:#523210; --ink:#36260F; --muted:#6B5230; --edge:#A28256; --line:#EBDCC0; --primary:#7A4A17; --onprimary:#FFFFFF; --partner:#F3E3B0; --onpartner:#4A3708; --track:#C28E4F; --fill:#3B2208; }
+  [data-theme="fjord"] { --bg:#EEF4F8; --card:#FFFFFF; --block:#B8D4E6; --onblock:#12304A; --onblock-muted:#2D4F6E; --ink:#14232F; --muted:#4A6070; --edge:#728FA2; --line:#D5E3EC; --primary:#1F5A85; --onprimary:#FFFFFF; --partner:#F4D6A0; --onpartner:#4A3208; --track:#98BDD6; --fill:#12304A; }
+  [data-theme="midnatt"] { --bg:#241A2E; --card:#2E2339; --block:#3A2B4A; --onblock:#FBE7C6; --onblock-muted:#D9BFA8; --ink:#F6E9D6; --muted:#C9B5C9; --edge:#7F6992; --line:#413352; --primary:#FFB454; --onprimary:#2A1A10; --partner:#F28FAD; --onpartner:#2E0F1B; --track:#54406A; --fill:#FFB454; }
+  [data-theme="synthwave"] { --bg:#1A1030; --card:#241546; --block:#2D1B5A; --onblock:#F5E6FF; --onblock-muted:#C9B0F0; --ink:#F5E6FF; --muted:#BBA6E0; --edge:#7A5FB8; --line:#3A2670; --primary:#FF4FD8; --onprimary:#1A1030; --partner:#3EE8E0; --onpartner:#0B2A2A; --track:#4A2F8A; --fill:#FF4FD8; }
+  :root { color-scheme: light; }
+  [data-theme="skog"], [data-theme="gruvbox"], [data-theme="midnatt"], [data-theme="synthwave"] { color-scheme: dark; }
 
   * { box-sizing: border-box; }
   body { margin:0; font:17px/1.4 'DM Sans',system-ui,sans-serif; background:var(--bg); color:var(--ink); }
@@ -101,7 +109,7 @@
   .actions { position:sticky; bottom:0; display:flex; gap:12px; padding:12px 20px 20px; background:var(--card); border-top:1px solid var(--line); }
   .actions .btn:last-child { flex:1; }
   .err { color:#B3261E; min-height:1.2em; font-size:15px; }
-  [data-theme="skog"] .err { color:#FFB4A9; }
+  [data-theme="skog"] .err, [data-theme="gruvbox"] .err, [data-theme="midnatt"] .err, [data-theme="synthwave"] .err { color:#FFB4A9; }
 
   /* shopping trip: big pill rows */
   .block .big { font:800 38px 'Bricolage Grotesque','DM Sans',sans-serif; letter-spacing:-1px; line-height:1.1; margin:0; color:var(--onblock); }
@@ -267,7 +275,8 @@ const T = {
         tag:'Merke', tagPh:'Skill med komma, f.eks. Gaver, Clas Ohlson', noTag:'Uten merke',
         gotOther:(g,t) => `${g} av ${t} kjøpt`, emptyOther:'Ingenting annet å kjøpe. Legg til gaver, ting til huset og lignende.',
         look:'Utseende', lookHint:'Velg farger dere begge liker. Valget gjelder for dere begge.', preview:'Slik ser det ut', sample1:'Sitroner', sample2:'Havremelk',
-        pal:{ salvie:['Salvie','Dus grønn med myk rosa'], mynte:['Mynte','Frisk mynte med lavendel'], oliven:['Oliven','Oliven med smørgul'], skog:['Skog','Mørk, rolig kveldsmodus'] },
+        pal:{ salvie:['Salvie','Dus grønn med myk rosa'], mynte:['Mynte','Frisk mynte med lavendel'], oliven:['Oliven','Oliven med smørgul'], skog:['Skog','Mørk, rolig kveldsmodus'],
+          maroon:['Maroon','Dyp vinrød med fersken'], orken:['Ørken','Sand og solbrent leire'], gruvbox:['Gruvbox','Retro mørk med gult'], brunost:['Brunost','Varm karamell, som på brødskiva'], fjord:['Fjord','Kjølig blå med solgul'], midnatt:['Midnattssol','Lilla natt med gull'], synthwave:['Synthwave','Neon etter mørkets frembrudd'] },
         cat:{ produce:'Frukt og grønt', dairy:'Meieri', pantry:'Tørrvarer', meat:'Kjøtt og fisk', frozen:'Frysevarer', household:'Husholdning', bakery:'Bakeri', '':'Annet' } },
   en: { welcome:'Welcome 🛒', yourName:'Your name', code:'Household code', join:'Join', title:'Our list',
         addItem:'Add an item', addBtn:'Add', addMore:'Add and new', clear:'Clear checked', logout:'Sign out', del:'Delete',
@@ -285,7 +294,8 @@ const T = {
         tag:'Tag', tagPh:'Separate with commas, e.g. Gifts, Clas Ohlson', noTag:'No tag',
         gotOther:(g,t) => `${g} of ${t} bought`, emptyOther:'Nothing else to buy. Add gifts, things for the house and the like.',
         look:'Appearance', lookHint:'Pick colours you both like. The choice applies to both of you.', preview:'Preview', sample1:'Lemons', sample2:'Oat milk',
-        pal:{ salvie:['Salvie','Dusty green with soft pink'], mynte:['Mynte','Fresh mint with lavender'], oliven:['Oliven','Olive with butter yellow'], skog:['Skog','Dark, calm evening mode'] },
+        pal:{ salvie:['Salvie','Dusty green with soft pink'], mynte:['Mynte','Fresh mint with lavender'], oliven:['Oliven','Olive with butter yellow'], skog:['Skog','Dark, calm evening mode'],
+          maroon:['Maroon','Deep wine red with peach'], orken:['Ørken','Sand and sun-baked clay'], gruvbox:['Gruvbox','Retro dark with yellow'], brunost:['Brunost','Warm caramel, like on a slice of bread'], fjord:['Fjord','Cool blue with sun yellow'], midnatt:['Midnattssol','Purple night with gold'], synthwave:['Synthwave','Neon after nightfall'] },
         cat:{ produce:'Produce', dairy:'Dairy', pantry:'Pantry', meat:'Meat & fish', frozen:'Frozen', household:'Household', bakery:'Bakery', '':'Other' } },
 };
 let lang = document.documentElement.lang === 'en' ? 'en' : 'nb';
@@ -535,7 +545,7 @@ $('add-form').onsubmit = async e => {
 };
 
 /* ---------- appearance (palette is shared by the household) ---------- */
-const THEMES = ['salvie', 'mynte', 'oliven', 'skog'];
+const THEMES = ['salvie', 'mynte', 'oliven', 'skog', 'maroon', 'orken', 'gruvbox', 'brunost', 'fjord', 'midnatt', 'synthwave'];
 const html = document.documentElement;
 function syncThemeColor() {
   document.querySelector('meta[name=theme-color]').content = getComputedStyle(html).getPropertyValue('--block').trim();
