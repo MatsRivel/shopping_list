@@ -80,25 +80,23 @@ fn init_db(path: &str) -> Connection {
     )
     .expect("migrate");
     // Additive migrations for databases created before these columns existed.
-    for (col, ddl) in [
-        ("qty", "ALTER TABLE items ADD COLUMN qty TEXT NOT NULL DEFAULT ''"),
-        ("category", "ALTER TABLE items ADD COLUMN category TEXT NOT NULL DEFAULT ''"),
-        ("note", "ALTER TABLE items ADD COLUMN note TEXT NOT NULL DEFAULT ''"),
-        ("kind", "ALTER TABLE items ADD COLUMN kind TEXT NOT NULL DEFAULT 'grocery'"),
-        ("tag", "ALTER TABLE items ADD COLUMN tag TEXT NOT NULL DEFAULT ''"),
+    for (table, col, ddl) in [
+        ("items", "qty", "qty TEXT NOT NULL DEFAULT ''"),
+        ("items", "category", "category TEXT NOT NULL DEFAULT ''"),
+        ("items", "note", "note TEXT NOT NULL DEFAULT ''"),
+        ("items", "kind", "kind TEXT NOT NULL DEFAULT 'grocery'"),
+        ("items", "tag", "tag TEXT NOT NULL DEFAULT ''"),
+        ("tags", "uses", "uses INTEGER NOT NULL DEFAULT 1"),
+        ("purchases", "kind", "kind TEXT NOT NULL DEFAULT 'grocery'"),
+        ("purchases", "tags", "tags TEXT NOT NULL DEFAULT ''"),
+        ("purchases", "bought_by", "bought_by TEXT NOT NULL DEFAULT ''"),
     ] {
         let has: bool = db
-            .query_row("SELECT count(*) > 0 FROM pragma_table_info('items') WHERE name=?1", [col], |r| r.get(0))
+            .query_row(&format!("SELECT count(*) > 0 FROM pragma_table_info('{table}') WHERE name=?1"), [col], |r| r.get(0))
             .expect("inspect schema");
         if !has {
-            db.execute(ddl, []).expect("migrate column");
+            db.execute(&format!("ALTER TABLE {table} ADD COLUMN {ddl}"), []).expect("migrate column");
         }
-    }
-    let has_uses: bool = db
-        .query_row("SELECT count(*) > 0 FROM pragma_table_info('tags') WHERE name='uses'", [], |r| r.get(0))
-        .expect("inspect schema");
-    if !has_uses {
-        db.execute("ALTER TABLE tags ADD COLUMN uses INTEGER NOT NULL DEFAULT 1", []).expect("migrate column");
     }
     db
 }
@@ -327,25 +325,23 @@ fn affected(r: rusqlite::Result<usize>) -> StatusCode {
     }
 }
 
-/// Checking an item off records a purchase (feeds "often bought"); unchecking undoes it.
-async fn set_done(_: User, State(app): State<App>, Path(id): Path<i64>, Json(t): Json<Toggle>) -> StatusCode {
+/// Checking an item off records a purchase (the history; groceries also feed "often bought"); unchecking undoes it.
+async fn set_done(User(who): User, State(app): State<App>, Path(id): Path<i64>, Json(t): Json<Toggle>) -> StatusCode {
     let db = db(&app);
-    let row = db.query_row("SELECT name,category,qty,done,kind FROM items WHERE id=?1", [id], |r| {
-        Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, bool>(3)?, r.get::<_, String>(4)?))
+    let row = db.query_row("SELECT name,category,qty,done,kind,tag FROM items WHERE id=?1", [id], |r| {
+        Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, bool>(3)?, r.get::<_, String>(4)?, r.get::<_, String>(5)?))
     });
-    let (name, category, qty, was_done, kind) = match row {
+    let (name, category, qty, was_done, kind, tag) = match row {
         Ok(v) => v,
         Err(rusqlite::Error::QueryReturnedNoRows) => return StatusCode::NOT_FOUND,
         Err(e) => return internal(e),
     };
     let res = (|| -> rusqlite::Result<()> {
         db.execute("UPDATE items SET done=?1 WHERE id=?2", params![t.done, id])?;
-        if kind != "grocery" {
-            // only groceries feed "often bought"
-        } else if t.done && !was_done {
+        if t.done && !was_done {
             db.execute(
-                "INSERT INTO purchases(item_id,name_key,name,category,qty) VALUES(?1,?2,?3,?4,?5)",
-                params![id, key(&name), name, category, qty],
+                "INSERT INTO purchases(item_id,name_key,name,category,qty,kind,tags,bought_by) VALUES(?1,?2,?3,?4,?5,?6,?7,?8)",
+                params![id, key(&name), name, category, qty, kind, tag, who],
             )?;
         } else if !t.done && was_done {
             db.execute("DELETE FROM purchases WHERE item_id=?1", [id])?;
@@ -401,7 +397,7 @@ struct Product {
 
 /// One entry per product (by name key), most recently bought first.
 fn products(db: &Connection) -> rusqlite::Result<Vec<(String, Product)>> {
-    let mut st = db.prepare("SELECT name_key,name,category,qty,bought_at FROM purchases ORDER BY bought_at DESC, id DESC")?;
+    let mut st = db.prepare("SELECT name_key,name,category,qty,bought_at FROM purchases WHERE kind='grocery' ORDER BY bought_at DESC, id DESC")?;
     let mut map: HashMap<String, Product> = HashMap::new();
     let mut order: Vec<String> = Vec::new();
     let rows = st.query_map([], |r| {
@@ -462,6 +458,52 @@ async fn history(_: User, State(app): State<App>) -> Result<Json<Vec<Often>>, St
         })
         .collect();
     Ok(Json(out))
+}
+
+#[derive(Deserialize)]
+struct RecentQuery {
+    days: Option<i64>,
+}
+
+#[derive(Serialize)]
+struct Purchase {
+    id: i64,
+    name: String,
+    qty: String,
+    kind: String,
+    category: String,
+    tags: Vec<String>,
+    bought_by: String,
+    bought_at: i64,
+}
+
+/// Everything checked off in the last `days` days (default 30, max 5 years), newest first, both kinds.
+async fn recent(_: User, State(app): State<App>, Query(q): Query<RecentQuery>) -> Result<Json<Vec<Purchase>>, StatusCode> {
+    let days = q.days.unwrap_or(30).clamp(1, 1825);
+    let db = db(&app);
+    let mut st = db
+        .prepare(
+            "SELECT id,name,qty,kind,category,tags,bought_by,bought_at FROM purchases
+             WHERE bought_at >= unixepoch() - ?1 * 86400 ORDER BY bought_at DESC, id DESC LIMIT 1000",
+        )
+        .map_err(internal)?;
+    let rows = st
+        .query_map([days], |r| {
+            Ok(Purchase {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                qty: r.get(2)?,
+                kind: r.get(3)?,
+                category: r.get(4)?,
+                tags: parse_tags(&r.get::<_, String>(5)?),
+                bought_by: r.get(6)?,
+                bought_at: r.get(7)?,
+            })
+        })
+        .map_err(internal)?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(internal)?;
+    Ok(Json(rows))
 }
 
 #[derive(Deserialize)]
@@ -594,6 +636,7 @@ fn router(app: App) -> Router {
         .route("/api/settings", get(get_settings).put(put_settings))
         .route("/api/tags", get(list_tags))
         .route("/api/history", get(history))
+        .route("/api/purchases", get(recent))
         .route("/api/suggest", get(suggest))
         .route("/api/trip", post(trip_ping).delete(trip_end))
         .with_state(app)
@@ -756,6 +799,39 @@ mod tests {
         assert_eq!(h[0]["on_list"], false);
         let (_, _, body) = call(&app, "GET", "/api/suggest?q=eg", Some(&c), None).await;
         assert_eq!(serde_json::from_str::<serde_json::Value>(&body).unwrap()[0]["name"], "Egg");
+    }
+
+    #[tokio::test]
+    async fn purchase_history_covers_both_kinds_and_records_who() {
+        let app = test_app();
+        let j = login_as(&app, "Jonas").await;
+        let k = login_as(&app, "Kari").await;
+        call(&app, "POST", "/api/items", Some(&j), Some(r#"{"name":"Melk","qty":"1.75 L","category":"dairy"}"#)).await;
+        call(&app, "POST", "/api/items", Some(&j), Some(r#"{"name":"Lego","kind":"other","tag":"Gaver, Jollyroom"}"#)).await;
+        let (_, _, body) = call(&app, "GET", "/api/items", Some(&j), None).await;
+        let items: serde_json::Value = serde_json::from_str(&body).unwrap();
+        let id = |n: &str| items.as_array().unwrap().iter().find(|i| i["name"] == n).unwrap()["id"].as_i64().unwrap();
+        // Kari checks both off.
+        for n in ["Melk", "Lego"] {
+            call(&app, "PATCH", &format!("/api/items/{}", id(n)), Some(&k), Some(r#"{"done":true}"#)).await;
+        }
+        let (_, _, body) = call(&app, "GET", "/api/purchases", Some(&j), None).await;
+        let p: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(p.as_array().unwrap().len(), 2);
+        let lego = p.as_array().unwrap().iter().find(|x| x["name"] == "Lego").unwrap();
+        assert_eq!(lego["kind"], "other");
+        assert_eq!(lego["tags"], serde_json::json!(["Gaver", "Jollyroom"]));
+        assert_eq!(lego["bought_by"], "Kari");
+        let melk = p.as_array().unwrap().iter().find(|x| x["name"] == "Melk").unwrap();
+        assert_eq!(melk["qty"], "1.75 L");
+        // Unchecking takes it out of the history again; clearing checked items keeps it.
+        call(&app, "PATCH", &format!("/api/items/{}", id("Lego")), Some(&k), Some(r#"{"done":false}"#)).await;
+        call(&app, "POST", "/api/items/clear-done", Some(&k), None).await;
+        let (_, _, body) = call(&app, "GET", "/api/purchases?days=7", Some(&j), None).await;
+        let p: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(p.as_array().unwrap().len(), 1);
+        assert_eq!(p[0]["name"], "Melk");
+        assert_eq!(call(&app, "GET", "/api/purchases", None, None).await.0, StatusCode::UNAUTHORIZED);
     }
 
     #[tokio::test]

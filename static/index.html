@@ -232,10 +232,15 @@
 
   <!-- history -->
   <div class="screen" id="history" hidden>
-    <div class="block"><h1 data-i18n="often"></h1><p data-i18n="oftenHint"></p></div>
+    <div class="block"><h1 data-i18n="historyTitle"></h1><p id="hist-hint"></p>
+      <div class="seg" id="hist-tabs" role="group" data-i18n-aria="historyTitle"></div></div>
     <div class="view" style="padding-top:4px">
+      <div id="recent-filters" hidden style="display:flex;flex-direction:column;gap:10px;margin:12px 0 0">
+        <div class="seg" id="recent-kind" role="group" data-i18n-aria="kindsLabel"></div>
+        <div class="seg" id="recent-range" role="group" data-i18n-aria="rangeLabel"></div>
+      </div>
       <div id="hist-items"></div>
-      <p class="empty" data-i18n="oftenEmpty" id="hist-empty" hidden></p>
+      <p class="empty" id="hist-empty" hidden></p>
     </div>
     <div class="bottom"><nav data-nav></nav></div>
   </div>
@@ -261,7 +266,7 @@ const CATS = ['produce','dairy','pantry','meat','frozen','household','bakery']; 
 const T = {
   nb: { welcome:'Velkommen 🛒', yourName:'Navnet ditt', code:'Husstandskode', join:'Bli med', title:'Vår liste',
         addItem:'Legg til vare', addBtn:'Legg til', addMore:'Legg til og ny', clear:'Fjern avkryssede', logout:'Logg ut', del:'Slett',
-        empty:'Listen er tom. Legg til noe over.', start:'Start handletur', navList:'Liste', navOften:'Ofte kjøpt', navLabel:'Hovedmeny',
+        empty:'Listen er tom. Legg til noe over.', start:'Start handletur', navList:'Liste', navOften:'Historikk', navLabel:'Hovedmeny',
         whatNeed:'Hva trenger dere?', count:'Antall', fewer:'Færre', more:'Flere', aisle:'Avdeling', note:'Notat', optional:'(valgfritt)',
         notePh:'Størrelse, produsent, alt andre bør vite', back:'Tilbake',
         left:n => `${n} igjen`, got:(g,t) => `${g} av ${t} i kurven`, addedBy:n => `Lagt til av ${n}`,
@@ -274,13 +279,15 @@ const T = {
         kinds:{ grocery:'Dagligvarer', other:'Annet' }, kindsLabel:'Type liste', unit:'Enhet', units:{ stk:'stk', kg:'kg', L:'L' },
         tag:'Merke', tagPh:'Skill med komma, f.eks. Gaver, Clas Ohlson', noTag:'Uten merke',
         gotOther:(g,t) => `${g} av ${t} kjøpt`, emptyOther:'Ingenting annet å kjøpe. Legg til gaver, ting til huset og lignende.',
+        historyTitle:'Historikk', tabOften:'Ofte kjøpt', tabRecent:'Nylig kjøpt', recentHint:'Det dere har kjøpt den siste tiden.',
+        all:'Alle', rangeLabel:'Periode', days:n => `${n} d`, yesterday:'I går', todayCap:'I dag', recentEmpty:'Ingenting kjøpt i denne perioden.', boughtBy:n => `Kjøpt av ${n}`,
         look:'Utseende', lookHint:'Velg farger dere begge liker. Valget gjelder for dere begge.', preview:'Slik ser det ut', sample1:'Sitroner', sample2:'Havremelk',
         pal:{ salvie:['Salvie','Dus grønn med myk rosa'], mynte:['Mynte','Frisk mynte med lavendel'], oliven:['Oliven','Oliven med smørgul'], skog:['Skog','Mørk, rolig kveldsmodus'],
           maroon:['Maroon','Dyp vinrød med fersken'], orken:['Ørken','Sand og solbrent leire'], gruvbox:['Gruvbox','Retro mørk med gult'], brunost:['Brunost','Varm karamell, som på brødskiva'], fjord:['Fjord','Kjølig blå med solgul'], midnatt:['Midnattssol','Lilla natt med gull'], synthwave:['Synthwave','Neon etter mørkets frembrudd'] },
         cat:{ produce:'Frukt og grønt', dairy:'Meieri', pantry:'Tørrvarer', meat:'Kjøtt og fisk', frozen:'Frysevarer', household:'Husholdning', bakery:'Bakeri', '':'Annet' } },
   en: { welcome:'Welcome 🛒', yourName:'Your name', code:'Household code', join:'Join', title:'Our list',
         addItem:'Add an item', addBtn:'Add', addMore:'Add and new', clear:'Clear checked', logout:'Sign out', del:'Delete',
-        empty:'The list is empty. Add something above.', start:'Start shopping', navList:'List', navOften:'Often bought', navLabel:'Main menu',
+        empty:'The list is empty. Add something above.', start:'Start shopping', navList:'List', navOften:'History', navLabel:'Main menu',
         whatNeed:'What do you need?', count:'Quantity', fewer:'Fewer', more:'More', aisle:'Aisle', note:'Note', optional:'(optional)',
         notePh:'Size, brand, anything others should know', back:'Back',
         left:n => `${n} to get`, got:(g,t) => `${g} of ${t} in the basket`, addedBy:n => `Added by ${n}`,
@@ -293,6 +300,8 @@ const T = {
         kinds:{ grocery:'Groceries', other:'Other' }, kindsLabel:'List type', unit:'Unit', units:{ stk:'pcs', kg:'kg', L:'L' },
         tag:'Tag', tagPh:'Separate with commas, e.g. Gifts, Clas Ohlson', noTag:'No tag',
         gotOther:(g,t) => `${g} of ${t} bought`, emptyOther:'Nothing else to buy. Add gifts, things for the house and the like.',
+        historyTitle:'History', tabOften:'Often bought', tabRecent:'Recently bought', recentHint:'What you have bought lately.',
+        all:'All', rangeLabel:'Period', days:n => `${n} d`, yesterday:'Yesterday', todayCap:'Today', recentEmpty:'Nothing bought in this period.', boughtBy:n => `Bought by ${n}`,
         look:'Appearance', lookHint:'Pick colours you both like. The choice applies to both of you.', preview:'Preview', sample1:'Lemons', sample2:'Oat milk',
         pal:{ salvie:['Salvie','Dusty green with soft pink'], mynte:['Mynte','Fresh mint with lavender'], oliven:['Oliven','Olive with butter yellow'], skog:['Skog','Dark, calm evening mode'],
           maroon:['Maroon','Deep wine red with peach'], orken:['Ørken','Sand and sun-baked clay'], gruvbox:['Gruvbox','Retro dark with yellow'], brunost:['Brunost','Warm caramel, like on a slice of bread'], fjord:['Fjord','Cool blue with sun yellow'], midnatt:['Midnattssol','Purple night with gold'], synthwave:['Synthwave','Neon after nightfall'] },
@@ -301,6 +310,7 @@ const T = {
 let lang = document.documentElement.lang === 'en' ? 'en' : 'nb';
 const t = k => T[lang][k];
 let me = '', items = [], history = [], others = [], addQty = 1, addCat = '', addUnit = 'stk', addKind = 'grocery', tags = [];
+let histTab = 'often', recentKind = 'all', recentDays = 30, recent = [];
 let listKind = localStorage.getItem('sl_kind') === 'other' ? 'other' : 'grocery';
 
 /* ---------- tiny DOM helper (text only, never innerHTML with data) ---------- */
@@ -337,7 +347,7 @@ function setLang(l) {
     navLink('#history', 'history', t('navOften'), '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
     navLink('#look', 'look', t('look'), '<path d="M12 3a9 9 0 100 18c1.4 0 2-.9 2-1.8 0-1.2-1-1.4-1-2.4 0-.9.7-1.3 1.6-1.3H17a4 4 0 004-4c0-4.4-4-8.5-9-8.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>'));
   for (const n of document.querySelectorAll('[data-nav]')) n.setAttribute('aria-label', t('navLabel'));
-  renderKinds(); renderUnits(); renderChips(); renderTags(); renderPals(); route();
+  renderKinds(); renderUnits(); renderChips(); renderTags(); renderPals(); renderHistSegs(); route();
 }
 function navLink(href, view, label, icon) {
   return h('a', { href, 'aria-current': current() === view ? 'page' : null }, svg(icon), label);
@@ -368,7 +378,7 @@ function route() {
   if (v !== prev) {
     if (v === 'shop') startTrip(); else if (prev === 'shop') stopTrip();
     if (v === 'add') { addKind = listKind; addQty = 1; addUnit = 'stk'; renderKinds(); renderUnits(); renderQty(); renderChips(); loadTags(); showKindFields(); $('add-err').textContent = ''; setTimeout(() => $('name').focus(), 0); }
-    if (v === 'history') loadHistory();
+    if (v === 'history') loadHistoryTab();
     prev = v; window.scrollTo(0, 0);
   }
   for (const n of document.querySelectorAll('[data-nav] a')) n.removeAttribute('aria-current');
@@ -427,7 +437,7 @@ function render() {
     $('cta').hidden = kind === 'other';
   }
   if (v === 'shop') $('with').textContent = others.length ? t('with')(others.join(', ')) : '';
-  if (v === 'history') renderHistory();
+  if (v === 'history') renderHistoryTab();
 }
 
 function ago(ts) {
@@ -439,7 +449,7 @@ function ago(ts) {
   return nb ? `for ${w} uker siden` : `${w} weeks ago`;
 }
 function renderHistory() {
-  $('hist-empty').hidden = history.length > 0;
+  $('hist-empty').textContent = t('oftenEmpty'); $('hist-empty').hidden = history.length > 0;
   const group = f => history.filter(x => x.frequency === f);
   $('hist-items').replaceChildren(...['weekly', 'sometimes'].filter(f => group(f).length).map(f =>
     h('section', { class:'aisle', style:'padding-top:22px' }, h('h2', {}, t(f)), group(f).map(x =>
@@ -449,6 +459,41 @@ function renderHistory() {
           : h('button', { class:'add', 'aria-label': t('addTo')(x.name), onclick: async () => {
               await api('items', 'POST', { name: x.name, qty: x.qty, category: x.category }); await Promise.all([refresh(), loadHistory()]); } },
               svg('<path d="M12 5v14M5 12h14"/>', 20, 2.4)))))));
+}
+function renderHistSegs() {
+  const seg = (id, opts, cur, set) => $(id).replaceChildren(...opts.map(([v, label]) =>
+    h('button', { type:'button', 'aria-pressed': v === cur, onclick: () => { set(v); renderHistSegs(); loadHistoryTab(); } }, label)));
+  seg('hist-tabs', [['often', t('tabOften')], ['recent', t('tabRecent')]], histTab, v => histTab = v);
+  seg('recent-kind', [['all', t('all')], ['grocery', t('kinds').grocery], ['other', t('kinds').other]], recentKind, v => recentKind = v);
+  seg('recent-range', [7, 30, 90].map(n => [n, t('days')(n)]), recentDays, v => recentDays = v);
+  $('hist-hint').textContent = t(histTab === 'often' ? 'oftenHint' : 'recentHint');
+  $('recent-filters').hidden = histTab !== 'recent';
+}
+const loadHistoryTab = () => histTab === 'often' ? loadHistory() : loadRecent();
+const renderHistoryTab = () => histTab === 'often' ? renderHistory() : renderRecent();
+async function loadRecent() { const r = await api('purchases?days=' + recentDays); if (r.ok) { recent = await r.json(); if (current() === 'history' && histTab === 'recent') renderRecent(); } }
+function dayLabel(ts) {
+  const d = new Date(ts * 1000), today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Math.round((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+  if (days === 0) return t('todayCap');
+  if (days === 1) return t('yesterday');
+  const opts = { weekday:'long', day:'numeric', month:'long', ...(d.getFullYear() !== today.getFullYear() && { year:'numeric' }) };
+  const label = new Intl.DateTimeFormat(lang === 'nb' ? 'nb' : 'en-GB', opts).format(d);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+function renderRecent() {
+  const list = recent.filter(x => recentKind === 'all' || x.kind === recentKind);
+  $('hist-empty').textContent = t('recentEmpty'); $('hist-empty').hidden = list.length > 0;
+  const days = new Map();   // already newest first
+  for (const x of list) { const k = dayLabel(x.bought_at); (days.get(k) ?? days.set(k, []).get(k)).push(x); }
+  $('hist-items').replaceChildren(...[...days].map(([day, xs]) =>
+    h('section', { class:'aisle', style:'padding-top:22px' }, h('h2', {}, day), xs.map(x => {
+      const where = x.kind === 'other' ? x.tags.join(', ') : (t('cat')[x.category] ?? '');
+      const sub = [x.qty && fmtQty(x.qty), where].filter(Boolean).join(' · ');
+      return h('div', { class:'hist' },
+        h('div', { class:'txt' }, h('span', { class:'nm' }, x.name), sub ? h('span', {}, sub) : null),
+        x.bought_by ? h('span', { class:'who' + (x.bought_by === me ? ' me' : ''), 'aria-label': t('boughtBy')(x.bought_by), title: t('boughtBy')(x.bought_by) }, [...x.bought_by][0].toUpperCase()) : null);
+    }))));
 }
 async function loadHistory() { const r = await api('history'); if (r.ok) { history = await r.json(); if (current() === 'history') renderHistory(); } }
 
@@ -583,7 +628,7 @@ $('logout').onclick = async () => { stopTrip(); await api('logout', 'POST'); me 
 
 setLang(lang);
 (async () => { const r = await api('me'); if (r.ok) { me = (await r.json()).name; route(); refresh(); } else route(); })();
-setInterval(() => { if (me && !document.hidden) { refresh(); if (current() === 'history') loadHistory(); } }, 5000);
+setInterval(() => { if (me && !document.hidden) { refresh(); if (current() === 'history') loadHistoryTab(); } }, 5000);
 </script>
 </body>
 </html>
