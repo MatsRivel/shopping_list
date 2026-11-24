@@ -264,7 +264,7 @@ const T = {
         wrongCode:'Feil husstandskode', tooMany:'For mange forsøk, vent ett minutt', error:'Noe gikk galt',
         badQty:'Skriv inn et antall større enn 0', badName:'Sjekk navn, antall og notat (maks 100/20/200 tegn)', dup:'Er allerede på listen', addFail:'Kunne ikke legge til varen', added:n => `La til ${n}`,
         kinds:{ grocery:'Dagligvarer', other:'Annet' }, kindsLabel:'Type liste', unit:'Enhet', units:{ stk:'stk', kg:'kg', L:'L' },
-        tag:'Merke', tagPh:'F.eks. Gaver, Clas Ohlson', noTag:'Uten merke',
+        tag:'Merke', tagPh:'Skill med komma, f.eks. Gaver, Clas Ohlson', noTag:'Uten merke',
         gotOther:(g,t) => `${g} av ${t} kjøpt`, emptyOther:'Ingenting annet å kjøpe. Legg til gaver, ting til huset og lignende.',
         look:'Utseende', lookHint:'Velg farger dere begge liker. Valget gjelder for dere begge.', preview:'Slik ser det ut', sample1:'Sitroner', sample2:'Havremelk',
         pal:{ salvie:['Salvie','Dus grønn med myk rosa'], mynte:['Mynte','Frisk mynte med lavendel'], oliven:['Oliven','Oliven med smørgul'], skog:['Skog','Mørk, rolig kveldsmodus'] },
@@ -282,7 +282,7 @@ const T = {
         wrongCode:'Wrong household code', tooMany:'Too many attempts, wait a minute', error:'Something went wrong',
         badQty:'Enter an amount greater than 0', badName:'Check name, quantity and note (max 100/20/200 characters)', dup:'Already on the list', addFail:'Could not add item', added:n => `Added ${n}`,
         kinds:{ grocery:'Groceries', other:'Other' }, kindsLabel:'List type', unit:'Unit', units:{ stk:'pcs', kg:'kg', L:'L' },
-        tag:'Tag', tagPh:'e.g. Gifts, Clas Ohlson', noTag:'No tag',
+        tag:'Tag', tagPh:'Separate with commas, e.g. Gifts, Clas Ohlson', noTag:'No tag',
         gotOther:(g,t) => `${g} of ${t} bought`, emptyOther:'Nothing else to buy. Add gifts, things for the house and the like.',
         look:'Appearance', lookHint:'Pick colours you both like. The choice applies to both of you.', preview:'Preview', sample1:'Lemons', sample2:'Oat milk',
         pal:{ salvie:['Salvie','Dusty green with soft pink'], mynte:['Mynte','Fresh mint with lavender'], oliven:['Oliven','Olive with butter yellow'], skog:['Skog','Dark, calm evening mode'] },
@@ -376,7 +376,7 @@ function sections(list, kind) {
   const sort = v => v.sort((a, b) => (a.done - b.done) || coll.compare(a.name, b.name));
   if (kind === 'other') {   // grouped by free-form tag; untagged last
     const by = new Map();
-    for (const it of list) (by.get(it.tag) ?? by.set(it.tag, []).get(it.tag)).push(it);
+    for (const it of list) for (const tg of it.tags.length ? it.tags : ['']) (by.get(tg) ?? by.set(tg, []).get(tg)).push(it);  // an item shows under each of its tags
     return [...by].sort(([a], [b]) => (a === '') - (b === '') || coll.compare(a, b)).map(([k, v]) => [k || t('noTag'), sort(v)]);
   }
   const by = new Map();
@@ -482,10 +482,24 @@ $('qty').oninput = () => { const n = readQty(); if (n != null) addQty = n; };
 $('qty').onblur = renderQty;   // snap back to the last valid amount
 $('qty').onfocus = () => $('qty').select();
 async function loadTags() { const r = await api('tags'); if (r.ok) { tags = await r.json(); renderTags(); } }
+// Same rules as the server: comma-separated, trimmed, inner whitespace collapsed, no case-insensitive duplicates.
+function parseTags(raw) {
+  const seen = new Set();
+  return raw.split(',').map(x => x.split(/\s+/).filter(Boolean).join(' ')).filter(x => x && !seen.has(x.toLowerCase()) && seen.add(x.toLowerCase()));
+}
 function renderTags() {
-  const cur = $('tag').value.trim().toLowerCase();
-  $('tagchips').replaceChildren(...tags.map(x => h('button', { type:'button', 'aria-pressed': x.toLowerCase() === cur,
-    onclick: () => { $('tag').value = $('tag').value.trim() === x ? '' : x; renderTags(); } }, x)));
+  const raw = $('tag').value, chosen = new Set(parseTags(raw).map(x => x.toLowerCase()));
+  const frag = raw.slice(raw.lastIndexOf(',') + 1).trim().toLowerCase();   // the tag being typed right now
+  const shown = tags.filter(x => chosen.has(x.toLowerCase()) || !frag || x.toLowerCase().startsWith(frag)).slice(0, 12);
+  $('tagchips').replaceChildren(...shown.map(x => h('button', { type:'button', 'aria-pressed': chosen.has(x.toLowerCase()),
+    onclick: () => {
+      const cur = parseTags($('tag').value), i = cur.findIndex(c => c.toLowerCase() === x.toLowerCase());
+      let next;
+      if (i >= 0) next = cur.filter((_, j) => j !== i);                       // tap a chosen tag to remove it
+      else next = parseTags($('tag').value.slice(0, $('tag').value.lastIndexOf(',') + 1) + x);  // replace the half-typed one
+      $('tag').value = next.length ? next.join(', ') + (i >= 0 ? '' : ', ') : '';
+      renderTags(); $('tag').focus();
+    } }, x)));
 }
 $('tag').oninput = renderTags;
 $('go-add').onclick = () => { location.hash = 'add'; };

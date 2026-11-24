@@ -18,6 +18,9 @@ const COOKIE: &str = "sl_session";
 const SESSION_TTL_SECS: i64 = 31_536_000;
 /// Item kinds: groceries are the main list; "other" (gifts, hardware...) is tagged freely.
 const KINDS: [&str; 2] = ["grocery", "other"];
+/// Max tags on one item, and max length of one tag.
+const MAX_TAGS: usize = 5;
+const MAX_TAG_LEN: usize = 30;
 const THEMES: [&str; 4] = ["salvie", "mynte", "oliven", "skog"];
 const DEFAULT_THEME: &str = "salvie";
 const TRIP_TTL: Duration = Duration::from_secs(30);
@@ -68,7 +71,8 @@ fn init_db(path: &str) -> Connection {
          CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
          CREATE TABLE IF NOT EXISTS tags(
             name_key TEXT PRIMARY KEY, name TEXT NOT NULL,
-            used_at INTEGER NOT NULL DEFAULT (unixepoch()));
+            used_at INTEGER NOT NULL DEFAULT (unixepoch()),
+            uses INTEGER NOT NULL DEFAULT 1);
          CREATE INDEX IF NOT EXISTS purchases_key ON purchases(name_key);
          CREATE INDEX IF NOT EXISTS purchases_item ON purchases(item_id);",
     )
@@ -88,7 +92,23 @@ fn init_db(path: &str) -> Connection {
             db.execute(ddl, []).expect("migrate column");
         }
     }
+    let has_uses: bool = db
+        .query_row("SELECT count(*) > 0 FROM pragma_table_info('tags') WHERE name='uses'", [], |r| r.get(0))
+        .expect("inspect schema");
+    if !has_uses {
+        db.execute("ALTER TABLE tags ADD COLUMN uses INTEGER NOT NULL DEFAULT 1", []).expect("migrate column");
+    }
     db
+}
+
+/// Split a comma-separated tag string: trim each, collapse inner whitespace, drop empties and
+/// case-insensitive duplicates (first spelling wins). Also used to read older single-string values.
+fn parse_tags(raw: &str) -> Vec<String> {
+    let mut seen = HashSet::new();
+    raw.split(',')
+        .map(|t| t.split_whitespace().collect::<Vec<_>>().join(" "))
+        .filter(|t| !t.is_empty() && seen.insert(key(t)))
+        .collect()
 }
 
 /// Case-insensitive identity of an item name (so "Egg" and "egg " are the same product).
@@ -186,7 +206,7 @@ struct Item {
     category: String,
     note: String,
     kind: String,
-    tag: String,
+    tags: Vec<String>,
 }
 
 async fn list(_: User, State(app): State<App>) -> Result<Json<Vec<Item>>, StatusCode> {
@@ -205,7 +225,7 @@ async fn list(_: User, State(app): State<App>) -> Result<Json<Vec<Item>>, Status
                 category: r.get(5)?,
                 note: r.get(6)?,
                 kind: r.get(7)?,
-                tag: r.get(8)?,
+                tags: parse_tags(&r.get::<_, String>(8)?),
             })
         })
         .map_err(internal)?
@@ -235,19 +255,20 @@ fn default_kind() -> String {
 
 async fn add(User(who): User, State(app): State<App>, Json(n): Json<NewItem>) -> StatusCode {
     let (name, qty, note) = (n.name.trim(), n.qty.trim(), n.note.trim());
-    let tag = n.tag.split_whitespace().collect::<Vec<_>>().join(" ");
+    let tags = parse_tags(&n.tag);
     if name.is_empty()
         || name.chars().count() > 100
         || qty.chars().count() > 20
         || note.chars().count() > 200
-        || tag.chars().count() > 30
+        || tags.len() > MAX_TAGS
+        || tags.iter().any(|t| t.chars().count() > MAX_TAG_LEN)
         || !KINDS.contains(&n.kind.as_str())
         || !CATEGORIES.contains(&n.category.as_str())
     {
         return StatusCode::BAD_REQUEST;
     }
     // Groceries are sorted by aisle, everything else by free-form tag (a store, "gifts", ...).
-    let (category, tag) = if n.kind == "grocery" { (n.category.as_str(), String::new()) } else { ("", tag) };
+    let (category, tags) = if n.kind == "grocery" { (n.category.as_str(), vec![]) } else { ("", tags) };
     let db = db(&app);
     let k = key(name);
     let dup = db
@@ -261,17 +282,17 @@ async fn add(User(who): User, State(app): State<App>, Json(n): Json<NewItem>) ->
     let res = db
         .execute(
             "INSERT INTO items(name,added_by,qty,category,note,kind,tag) VALUES(?1,?2,?3,?4,?5,?6,?7)",
-            params![name, who, qty, category, note, n.kind, tag],
+            params![name, who, qty, category, note, n.kind, tags.join(",")],
         )
         .and_then(|_| {
-            if tag.is_empty() {
-                return Ok(0);
+            for tag in &tags {
+                db.execute(
+                    "INSERT INTO tags(name_key,name) VALUES(?1,?2)
+                     ON CONFLICT(name_key) DO UPDATE SET name=excluded.name, used_at=unixepoch(), uses=uses+1",
+                    params![key(tag), tag],
+                )?;
             }
-            db.execute(
-                "INSERT INTO tags(name_key,name) VALUES(?1,?2)
-                 ON CONFLICT(name_key) DO UPDATE SET name=excluded.name, used_at=unixepoch()",
-                params![key(&tag), tag],
-            )
+            Ok(())
         });
     match res {
         Ok(_) => StatusCode::CREATED,
@@ -279,10 +300,10 @@ async fn add(User(who): User, State(app): State<App>, Json(n): Json<NewItem>) ->
     }
 }
 
-/// Recently used tags for non-grocery items, newest first.
+/// Tags for non-grocery items, most used first (ties: most recent).
 async fn list_tags(_: User, State(app): State<App>) -> Result<Json<Vec<String>>, StatusCode> {
     let db = db(&app);
-    let mut st = db.prepare("SELECT name FROM tags ORDER BY used_at DESC, rowid DESC LIMIT 12").map_err(internal)?;
+    let mut st = db.prepare("SELECT name FROM tags ORDER BY uses DESC, used_at DESC, rowid DESC LIMIT 30").map_err(internal)?;
     let tags = st
         .query_map([], |r| r.get::<_, String>(0))
         .map_err(internal)?
@@ -677,9 +698,17 @@ mod tests {
         let (_, _, body) = call(&app, "GET", "/api/items", Some(&c), None).await;
         let items: serde_json::Value = serde_json::from_str(&body).unwrap();
         let other = items.as_array().unwrap().iter().find(|i| i["kind"] == "other").unwrap();
-        assert_eq!(other["tag"], "Gaver til Ola");
+        assert_eq!(other["tags"], serde_json::json!(["Gaver til Ola"]));
         assert_eq!(other["category"], "", "aisle is ignored for non-groceries");
-        assert_eq!(call(&app, "GET", "/api/tags", Some(&c), None).await.2, r#"["Gaver til Ola"]"#);
+        // Several tags in one field: trimmed, de-duplicated (case-insensitive), empties dropped.
+        assert_eq!(post(r#"{"name":"Skruer","kind":"other","tag":" Gaver ,Clahs  Ohlson , gaver,, "}"#).await.0, StatusCode::CREATED);
+        assert_eq!(post(r#"{"name":"Y","kind":"other","tag":"a,b,c,d,e,f"}"#).await.0, StatusCode::BAD_REQUEST);
+        let (_, _, body) = call(&app, "GET", "/api/items", Some(&c), None).await;
+        let skruer = serde_json::from_str::<serde_json::Value>(&body).unwrap().as_array().unwrap().iter().find(|i| i["name"] == "Skruer").unwrap().clone();
+        assert_eq!(skruer["tags"], serde_json::json!(["Gaver", "Clahs Ohlson"]));
+        // Suggestions: most used first ("Gaver" was used twice).
+        assert_eq!(post(r#"{"name":"Kort","kind":"other","tag":"Gaver"}"#).await.0, StatusCode::CREATED);
+        assert_eq!(call(&app, "GET", "/api/tags", Some(&c), None).await.2, r#"["Gaver","Clahs Ohlson","Gaver til Ola"]"#);
         // Buying it twice never makes it an "often bought" grocery.
         let id = other["id"].as_i64().unwrap();
         for done in ["true", "false", "true"] {
@@ -693,8 +722,8 @@ mod tests {
         assert_eq!(call(&app, "POST", "/api/items/clear-done?kind=grocery", Some(&c), None).await.0, StatusCode::NO_CONTENT);
         let (_, _, body) = call(&app, "GET", "/api/items", Some(&c), None).await;
         let left: serde_json::Value = serde_json::from_str(&body).unwrap();
-        assert_eq!(left.as_array().unwrap().len(), 1);
-        assert_eq!(left[0]["kind"], "other");
+        assert_eq!(left.as_array().unwrap().len(), 3);
+        assert!(left.as_array().unwrap().iter().all(|i| i["kind"] == "other"));
         assert_eq!(call(&app, "POST", "/api/items/clear-done?kind=bogus", Some(&c), None).await.0, StatusCode::BAD_REQUEST);
     }
 
